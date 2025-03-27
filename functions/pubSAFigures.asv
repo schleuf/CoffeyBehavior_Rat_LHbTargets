@@ -391,9 +391,8 @@ function [g] = plotPubFig(pT, runType, yVar, yLab, forceY, cVar, subInd, titles,
             g(1,sp).set_title(titles{sp});
         end
     end
-    if exist('g', 'var')
-        g.draw;
-    end
+    
+    g.draw;
     
     yMax = nan([length(sp_subInd), 1]);
     maxStat = nan([length(sp_subInd), 1]);
@@ -529,9 +528,8 @@ function [g] = plotPubFig(pT, runType, yVar, yLab, forceY, cVar, subInd, titles,
     end
 
      for sp = 1:length(sp_subInd)
-         if ~noDat(sp)
-            set(g(1,sp).facet_axes_handles,'LineWidth', 1.5, 'TickDir','out');
-         end
+         if ~no
+        set(g(1,sp).facet_axes_handles,'LineWidth', 1.5, 'TickDir','out');
      end
     
     % Export Figure

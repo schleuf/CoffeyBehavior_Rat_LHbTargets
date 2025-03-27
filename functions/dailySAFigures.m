@@ -14,41 +14,41 @@ function dailySAFigures(mT,runType, dex, figFold, figsave_type)
         expStr = char(string(runType(rt)));
 
         pT = mT(dex.(string(expStr)),:);
-        % fig 1: all animals grouped by sex and strain
+        % fig 1: all animals grouped by sex and AAV
         figName{1} = fullfile(figFold,[expStr, '_GroupBehaviorFig']);
-        grammOptions{1} = {'color', pT.Strain, 'lightness', pT.Sex, 'group', pT.sessionType};
-        orderOptions{1} = {'lightness',{'Female','Male'}, 'color',{'c57','CD1'}};
-        legOptions{1} = {'color', 'Strain', 'lightness', 'Sex'};
+        grammOptions{1} = {'color', pT.LHbAAV, 'lightness', pT.Sex, 'group', pT.sessionType};
+        orderOptions{1} = {'lightness',{'Female','Male'}, 'color',{'Jaws','Control'}};
+        legOptions{1} = {'color', 'LHbAAV', 'lightness', 'Sex'};
         
-        % fig 2: all animals grouped by acquisition
-        figName{2} = fullfile(figFold,[expStr, '_AquiredBehaviorFig']);
-        grammOptions{2} = {'color', pT.Strain, 'lightness', pT.Acquire, 'group',pT.sessionType};
-        orderOptions{2} = {'lightness', {'NonAcquire','Acquire'}, 'color',{'c57','CD1'}};
-        legOptions{2} = {'color', 'Strain', 'lightness', 'Acquire'};
-    
-        % fig 3: acquirer animals grouped by strain
-        figName{3} = fullfile(figFold,[expStr, '_StrainCollapsedBehaviorAcquirersOnlyFig']);
-        grammOptions{3} = {'color', pT.Strain,'group', pT.sessionType, 'subset', pT.Acquire=='Acquire'};
-        orderOptions{3} = {'color',{'c57','CD1'}};
-        legOptions{3} = {'color', 'Strain'};
-
-        % fig 4: acquirer animals grouped by sex
-        figName{4} = fullfile(figFold,[expStr, '_SexCollapsedBehaviorAcquirersOnlyFig']);
-        grammOptions{4} = {'lightness', pT.Sex, 'group', pT.sessionType, 'subset', pT.Acquire=='Acquire'};
-        orderOptions{4} = {'lightness', {'Female','Male'}};
-        legOptions{4} = {'lightness', 'Sex'};
-    
-        % fig 5: acquirer animals grouped by sex and strain
-        figName{5} = fullfile(figFold,[expStr, '_GroupBehaviorAcquirersOnlyFig']);
-        grammOptions{5} = {'color', pT.Strain, 'lightness', pT.Sex, 'group', pT.sessionType, 'subset', pT.Acquire=='Acquire'};
-        orderOptions{5} = {'lightness',{'Female','Male'},'color',{'c57','CD1'}};
-        legOptions{5} = {'color', 'Strain', 'lightness', 'Sex'};
-    
+        % % fig 2: all animals grouped by acquisition
+        % figName{2} = fullfile(figFold,[expStr, '_AquiredBehaviorFig']);
+        % grammOptions{2} = {'color', pT.LHbAAV, 'lightness', pT.Acquire, 'group',pT.sessionType};
+        % orderOptions{2} = {'lightness', {'NonAcquire','Acquire'}, 'color',{'Jaws','Control'}};
+        % legOptions{2} = {'color', 'LHbAAV', 'lightness', 'Acquire'};
+        % 
+        % % fig 3: acquirer animals grouped by AAV
+        % figName{3} = fullfile(figFold,[expStr, '_AAVnCollapsedBehaviorAcquirersOnlyFig']);
+        % grammOptions{3} = {'color', pT.LHbAAV,'group', pT.sessionType, 'subset', pT.Acquire=='Acquire'};
+        % orderOptions{3} = {'color',{'Jaws','Control'}};
+        % legOptions{3} = {'color', 'LHbAAV'};
+        % 
+        % % fig 4: acquirer animals grouped by sex
+        % figName{4} = fullfile(figFold,[expStr, '_SexCollapsedBehaviorAcquirersOnlyFig']);
+        % grammOptions{4} = {'lightness', pT.Sex, 'group', pT.sessionType, 'subset', pT.Acquire=='Acquire'};
+        % orderOptions{4} = {'lightness', {'Female','Male'}};
+        % legOptions{4} = {'lightness', 'Sex'};
+        % 
+        % % fig 5: acquirer animals grouped by sex and strain
+        % figName{5} = fullfile(figFold,[expStr, '_GroupBehaviorAcquirersOnlyFig']);
+        % grammOptions{5} = {'color', pT.LHbAAV, 'lightness', pT.Sex, 'group', pT.sessionType, 'subset', pT.Acquire=='Acquire'};
+        % orderOptions{5} = {'lightness',{'Female','Male'},'color',{'Jaws','Control'}};
+        % legOptions{5} = {'color', 'LHbAAV', 'lightness', 'Sex'};
+         
         % fig 6: all animals grouped by Morning/Afternoon session
         figName{6} = fullfile(figFold,[expStr, '_TimeOfBehaviorCollapsedFig']);
-        grammOptions{6} = {'color', pT.TimeOfBehavior, 'lightness', pT.Strain, 'group', pT.sessionType,};
-        orderOptions{6} = {'color',{'Morning','Afternoon'}, 'lightness', {'c57', 'CD1'}};
-        legOptions{6} = {'color', 'Time of Session', 'lightness', 'Strain'};
+        grammOptions{6} = {'color', pT.TimeOfBehavior, 'lightness', pT.LHbAAV, 'group', pT.sessionType,};
+        orderOptions{6} = {'color',{'Morning','Afternoon'}, 'lightness', {'Jaws', 'Control'}};
+        legOptions{6} = {'color', 'Time of Session', 'lightness', 'LHbAAV'};
     
         % % fig 7: all animals individually
         % figName{7} = fullfile(figFold,[expStr, '_IndividualBehaviorAllFig']);
@@ -69,23 +69,22 @@ function dailySAFigures(mT,runType, dex, figFold, figsave_type)
         % legOptions{9} = {'color', 'TagNumber', 'lightness', 'Strain'};
          
         % % fig 10: all animals grouped by chamber
-        % figName{10} = fullfile(figFold,[expStr, '_BoxBehaviorAllFig']);
-        % grammOptions{10} = {'color', pT.Chamber, 'lightness', pT.Acquire, 'group', pT.sessionType,};
-        % orderOptions{10} = {'lightness',{'NonAcquire','Acquire'}};
-        % legOptions{10} = {'color', 'Chamber', 'lightness', 'Acquire'};
+        figName{10} = fullfile(figFold,[expStr, '_BoxBehaviorAllFig']);
+        grammOptions{10} = {'color', pT.Chamber, 'lightness', pT.Acquire, 'group', pT.sessionType};
+        orderOptions{10} = {'lightness',{'NonAcquire','Acquire'}};
+        legOptions{10} = {'color', 'Chamber', 'lightness', 'Acquire'};
         
-        % % fig 11: acquirers grouped by chamber
-        % figName{11} = fullfile(figFold,[expStr, '_BoxBehaviorAcquireFig']);
-        % grammOptions{11} = {'color', pT.Chamber, 'lightness', pT.TimeOfBehavior, 'subset', pT.Acquire=='Acquire', 'group', pT.sessionType};
-        % orderOptions{11} = {'lightness',{'Morning','Afternoon'}};
-        % legOptions{11} = {'color', 'Chamber', 'lightness', 'Time of Session'};
-        % 
-        % % fig 12: nonacquirers grouped by chamber
-        % figName{12} = fullfile(figFold,[expStr, '_BoxBehaviorNonacquireFig']);
-        % grammOptions{12} = {'color', pT.Chamber, 'lightness', pT.TimeOfBehavior, 'subset', pT.Acquire=='NonAcquire', 'group', pT.sessionType};
-        % orderOptions{12} = {'lightness',{'Morning','Afternoon'}};
-        % legOptions{12} = {'color', 'Chamber', 'lightness', 'Time of Session'};
-        
+        % fig 11: AM animals
+        figName{11} = fullfile(figFold,[expStr, '_IndividualBehaviorAMFig']);
+        grammOptions{11} = {'color', pT.Chamber, 'subset', pT.TimeOfBehavior == 'Morning'};
+        orderOptions{11} = {};
+        legOptions{11} = {'color', 'Chamber'};
+
+        % fig 12: PM animals
+        figName{12} = fullfile(figFold,[expStr, '_IndividualBehaviorPMFig']);
+        grammOptions{12} = {'color', pT.Chamber, 'subset', pT.TimeOfBehavior == 'Afternoon'};
+        orderOptions{12} = {};
+        legOptions{12} = {'color', 'Chamber'};        
     
         %% figure generation
     
@@ -112,10 +111,6 @@ function plotDailies(pT, runType, yVals, yLabs, figName, figsave_type, varargin)
     col = 1;
     for y = 1:length(yVals)
         g(row,col)=gramm('x',pT.slideSession,'y',pT.(yVals{y}), p.Results.GrammOptions{:});
-        if contains(figName, 'Individual')
-            g(row,col).geom_jitter('alpha',.6); % SSnote: why do geom_jitter and geom_line lines undo collapsing data by group?
-            g(row,col).geom_line('alpha',.6);
-        end
         g(row,col).set_color_options(p.Results.ColorOptions{:});
         g(row,col).stat_summary('geom',{'black_errorbar','point','line'},'type','sem','dodge',.1,'setylim',1);
         g(row,col).set_point_options('markers',{'o','s'},'base_size',10);
@@ -141,7 +136,10 @@ function plotDailies(pT, runType, yVals, yLabs, figName, figsave_type, varargin)
             [row, col] = updateRowCol(row, col, 3);
             yMax = 0;
             for ss = 1:length(g(y).results.stat_summary)
-                maxStat = nanmax(g(y).results.stat_summary(ss).yci(:));
+               maxStat = nanmax(g(y).results.stat_summary(ss).yci(:));
+               if isnan(maxStat)
+                   maxStat = nanmax(g(y).results.stat_summary(ss).y(:));
+               end
                if maxStat > yMax
                    yMax = maxStat;
                end      

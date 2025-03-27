@@ -1,4 +1,4 @@
-function [varTable, eventCode, eventTime] = importMouseOralSA(filename)
+function [varTable, eventCode, eventTime] = importRatOralSA(filename)
 %IMPORTFILE Import MED-PC data from a text file
 
 %% Input:
@@ -25,7 +25,7 @@ function [varTable, eventCode, eventTime] = importMouseOralSA(filename)
 %
 % \  Event stamps ( array E )
 % \   1   = Right Lev press
-% \   2   = Left Lev press
+% \   2   = Leftt Lev press
 % \   3   = Rewarded rt Lev press
 % \   4   = Rewarded lt Lev press
 % \   5   = Reinforcement delivery
@@ -53,7 +53,7 @@ function [varTable, eventCode, eventTime] = importMouseOralSA(filename)
 % \   27  = Left lever extends
 % \   28  = Right lever retracts
 % \   29  = Left lever retracts
-% \   30  = Experimenter adminstered non-contingent reward delivery
+% \   30  = Opto Pulse Onset
 % \   100 = Session termination
 
 %% Set up the Import Options and import the data

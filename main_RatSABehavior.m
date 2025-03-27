@@ -45,21 +45,23 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 %                       second value can be 'all', 'first', or 'last'. If 'first' or 'last', there should be a 3rd
 %                       value giving the number of days to average across, or it will default to 1.  
 %   pAcq:true: plot aquisition histogram to choose threshold
+
 runNum = 'all'; 
 runType = 'all'; 
-createNewMasterTable = false; 
+createNewMasterTable = true; 
 firstHour = false; 
 excludeData = true; 
 acquisition_thresh = 10; 
-acquisition_testPeriod = {'Training', 'all'};
-pAcq = true;
-run_BE_analysis = true;
+acquisition_testPeriod = {'PreTraining', 'all'};
+
+run_BE_analysis = false;
 run_withinSession_analysis = false;
 run_individualSusceptibility_analysis = false;
 
 % FIGURE SETTINGS
 % Note: if figures are generated they are also saved.
-%   saveTabs: If true, save matlab tables of analyzed datasets
+%   saveTabs: If true, save .mat and/or .csv of analyzed datasets
+%   pAcq: If true, 
 %   dailyFigs: If true, generate daily figures from dailySAFigures.m
 %   pubFigs: If true, generate publication figures from pubSAFigures.m
 %   indivIntake_figs: If true, generate figures for individual animal behavior across & within sessions
@@ -67,21 +69,22 @@ run_individualSusceptibility_analysis = false;
 %   groupOralFentOutput_figs: If true, generate severity figures
 %   figsave_type: Cell of char variables listing all image data types to save figures as
 saveTabs = true;
-dailyFigs = false;
-pubFigs = false;
+pAcq = true;
+dailyFigs = true;
+pubFigs = true;
 indivIntake_figs = false;
-groupIntake_figs = true;
+groupIntake_figs = false;
 groupOralFentOutput_figs = false;
 figsave_type = {'.png', '.pdf'};
 
 % color settings chosen for publication figures. SSnote: haven't been implemented across most figure-generating functions yet. 
-gramm_C57_Sex_colors = {'hue_range',[40 310],'lightness_range',[95 65],'chroma_range',[50 90]};
-gramm_CD1_Sex_colors = {'hue_range',[85 -200],'lightness_range',[85 75],'chroma_range',[75 90]};
-gramm_Strain_Acq_colors = {'hue_range',[25 385],'lightness_range',[95 60],'chroma_range',[50 70]};
-col_M_c57 = [0, 187/255, 144/255];
-col_F_c57 = [1, 107/255, 74/255];
-col_M_CD1 = [163/255, 137/255, 1];
-col_F_CD1 = [198/255, 151/255, 0];
+gramm_Jaws_Sex_colors = {'hue_range',[40 310],'lightness_range',[95 65],'chroma_range',[50 90]};
+gramm_Cont_Sex_colors = {'hue_range',[85 -200],'lightness_range',[85 75],'chroma_range',[75 90]};
+gramm_Condition_Acq_colors = {'hue_range',[25 385],'lightness_range',[95 60],'chroma_range',[50 70]};
+col_M_Jaws = [0, 187/255, 144/255];
+col_F_Jaws = [1, 107/255, 74/255];
+col_M_Cont = [163/255, 137/255, 1];
+col_F_Cont = [198/255, 151/255, 0];
 
 % SAVE PATHS
 % - Each dataset run (determined by runNum and runType) will have its own
@@ -111,7 +114,7 @@ end
 
 % Import Master Key
 opts = detectImportOptions(masterSheet_flnm);
-opts = setvartype(opts, {'TagNumber','ID','Cage','Sex','Strain','TimeOfBehavior'}, 'categorical'); % Columns of the master key to be pulled in
+opts = setvartype(opts, {'TagNumber','ID','Cage','Sex','TimeOfBehavior'}, 'categorical'); % Columns of the master key to be pulled in
 mKey = readtable(masterSheet_flnm, opts);
 
 % Create subdirectories
@@ -150,6 +153,8 @@ else
     mT.Acquire = Acquire;
 end
 
+mT.LHbAAV(mT.LHbAAV == 'N/A') = categorical("Control");
+
 % Get data from the first hour of the session 
 if firstHour
     hmT = getFirstHour(mT);
@@ -159,10 +164,10 @@ end
 groupStats = struct;
 if firstHour; hour_groupStats = struct; end
 for et = 1:length(runType)
-    groupStats.(char(runType(et))) = grpstats(mT(dex.(char(runType(et))),:), ["Sex", "Strain", "Session"], ["mean", "sem"], ...
+    groupStats.(char(runType(et))) = grpstats(mT(dex.(char(runType(et))),:), ["Sex", "LHbTarget", "LHbAAV", "Session"], ["mean", "sem"], ...
                           "DataVars",["ActiveLever", "InactiveLever", "EarnedInfusions", "HeadEntries", "Latency", "Intake"]);
     if firstHour
-        hour_groupStats.(char(runType(et))) = grpstats(hmT(dex.(char(runType(et))),:),["Sex", "Strain", "Session"], ["mean", "sem"], ...
+        hour_groupStats.(char(runType(et))) = grpstats(hmT(dex.(char(runType(et))),:),["Sex", "LHbTarget", "LHbAAV", "Session"], ["mean", "sem"], ...
                                    "DataVars",["ActiveLever", "InactiveLever", "EarnedInfusions", "HeadEntries", "Latency", "Intake"]);
     end
     if saveTabs
@@ -178,14 +183,12 @@ end
 %% ------------- FIGURES FOR DAILY SPOT CHECKS --------------
 
 if dailyFigs
-    % Save daily copy of the master table in .mat and xlsx format and save groups stats  
-    mTname = [sub_dir, tabs_savepath, dt, '_MasterBehaviorTable.mat'];
     %Generate a set of figures to spotcheck data daily
     dailySAFigures(mT, runType, dex, [sub_dir, dailyfigs_savepath], figsave_type);
-    close all
+    % close all
     if firstHour
         dailySAFigures(hmT, runType, dex, [fH_sub_dir, dailyfigs_savepath], figsave_type)
-        close all
+        % close all
     end
 end
 

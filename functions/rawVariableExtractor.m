@@ -91,17 +91,17 @@ function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime)
     % SSnote: these are encoded as 20 and 21, don't need to calc them 
     varTable.itiActiveLever= varTable.ActiveLever - varTable.EarnedInfusions;
     inLP=eventTime(eventCode==23);% 23  = Inactive Lev press
-    % SS hack for absent inactive lever event codes in some sessions...
-    if isempty(inLP)
-        inLP = eventTime(eventCode==1); % HARDCODED TO READ RIGHT LEVER AS INACTIVE LEVER
-        if showWarnings
-            if ~isempty(inLP)
-                disp(['logged right lever presses as inactive lever presses for ID:', char(varTable.TagNumber), ' on ', char(varTable.Date)])
-            else
-                disp(['no inactive lever presses found for ID:', char(varTable.TagNumber), ' on ', char(varTable.Date)])
-            end
-        end
-    end
+    % % SS hack for absent inactive lever event codes in some sessions...
+    % if isempty(inLP)
+    %     inLP = eventTime(eventCode==1); % HARDCODED TO READ RIGHT LEVER AS INACTIVE LEVER
+    %     if showWarnings
+    %         if ~isempty(inLP)
+    %             disp(['logged right lever presses as inactive lever presses for ID:', char(varTable.TagNumber), ' on ', char(varTable.Date)])
+    %         else
+    %             disp(['no inactive lever presses found for ID:', char(varTable.TagNumber), ' on ', char(varTable.Date)])
+    %         end
+    %     end
+    % end
     inITI=[]; % Initialize in case there are no inLPs during ITI   
     for j = 1:height(time_rewLP)
         inITI(j,1)=sum(inLP>time_rewLP(j) & inLP<(time_rewLP(j)+10)); % Which inactive LPs occur in the 10s following a reward (the ITI)

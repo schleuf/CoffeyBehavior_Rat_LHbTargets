@@ -4,7 +4,7 @@ function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, exp
     % Import Master Key
     addpath(genpath(main_folder))
     opts = detectImportOptions(masterKey_flnm);
-    opts = setvartype(opts,{'TagNumber','ID','Cage','Sex','Strain','TimeOfBehavior'},'categorical'); % Must be variables in the master key
+    opts = setvartype(opts,{'TagNumber','ID','Cage','Sex','TimeOfBehavior', 'LHbTarget', 'LHbAAV'},'categorical'); % Must be variables in the master key
     mKey=readtable(masterKey_flnm,opts);
     
     % Import Experiment Keyp.
@@ -44,7 +44,10 @@ function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, exp
                
                 % Find this animal's index in mKey
                 tag = varTable.TagNumber(height(varTable));
+                tag = strsplit(char(tag), '_');
+                tag = categorical(string(tag{2}));
                 mKey_ind = find(mKey.TagNumber==tag);
+                varTable.TagNumber = tag;
                 
                 % Get experiment type from logical indexing in mKey
                 if mKey.Extinction(mKey_ind) && mKey.Reinstatement(mKey_ind) && ~mKey.BehavioralEconomics(mKey_ind)
@@ -117,7 +120,7 @@ function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, exp
     end
     
     % Join Master Variable Table with Key to Include Grouping Variables
-    mT=innerjoin(mT,mKey,'Keys',{'TagNumber'},'RightVariables',{'Sex','Strain','TimeOfBehavior','Chamber'});
+    mT=innerjoin(mT,mKey,'Keys',{'TagNumber'},'RightVariables',{'Sex','TimeOfBehavior','Chamber', 'LHbTarget', 'LHbAAV'});
     
     %%
     save('data_masterTable','mT');
