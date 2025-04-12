@@ -48,7 +48,7 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 
 runNum = 'all'; 
 runType = 'all'; 
-createNewMasterTable = true; 
+createNewMasterTable = false; 
 firstHour = false; 
 excludeData = true; 
 acquisition_thresh = 10; 
@@ -71,7 +71,7 @@ run_individualSusceptibility_analysis = false;
 saveTabs = true;
 pAcq = true;
 dailyFigs = true;
-pubFigs = true;
+pubFigs = false;
 indivIntake_figs = false;
 groupIntake_figs = false;
 groupOralFentOutput_figs = false;

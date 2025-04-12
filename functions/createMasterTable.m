@@ -37,7 +37,7 @@ function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, exp
             
             if contains(Files(i).name, '_Subject') || contains(Files(i).name, '.Subject') % SS edit to avoid invalid filenames
                 % Import Data Geterated By MED-PC Code
-                [varTable, eventCode, eventTime] = importMouseOralSA(fullfile(Files(i).folder, Files(i).name));
+                [varTable, eventCode, eventTime] = importRatOralSA(fullfile(Files(i).folder, Files(i).name));
                 
                 % Calculate Variables Using Raw Data
                 [varTable] = rawVariableExtractor(varTable, eventCode, eventTime);

@@ -2,13 +2,13 @@
 % SS 2025
 
 %% USER SETTINGS
-main_folder = 'C:\Users\schle\Documents\GitHub\CoffeyBehavior';
-masterKey_flnm = [main_folder, '\Golden R01 Behavior Master Key.xlsx'];
+main_folder = 'C:\Users\sierra\OneDrive\Documents\GitHub\CoffeyBehavior_RatEdition';
+masterKey_flnm = [main_folder, '\Coffey R00 Master Key.xlsx'];
 experimentKey_flnm = [main_folder, '\Experiment Key.xlsx'];
 masterTable_flnm = [main_folder, '\05-Feb-2025_masterTable.mat']; % used if createNewMasterTable == false 
 beh_datapath = {[main_folder, '\All Behavior']};
 
-createNewMasterTable = false; % if session numbers need to beupdated and correctFiles is true, a new master table will be created after updating medPC files regardless of this setting
+createNewMasterTable = true; % if session numbers need to beupdated and correctFiles is true, a new master table will be created after updating medPC files regardless of this setting
 correctFiles = true;
 runType = 'all'; % 'ER' (Extinction Reinstatement) or 'BE' (Behavioral Economics) or 'SA' (Self Administration) or 'E-BE-PR (Extinction, Beh)
 runNum = -1; % if runNum == -1, get all runs
@@ -25,7 +25,7 @@ cd(main_folder)
 addpath(genpath(main_folder))
 
 opts = detectImportOptions(masterKey_flnm);
-opts = setvartype(opts,{'TagNumber','ID','Cage','Sex','Strain','TimeOfBehavior'},'categorical'); % Must be variables in the master key
+opts = setvartype(opts,{'TagNumber','ID','Cage','Sex','TimeOfBehavior', 'LHbTarget', 'LHbAAV'},'categorical'); % Must be variables in the master key
 mKey=readtable(masterKey_flnm, opts);
 expKey = readtable(experimentKey_flnm);
 
@@ -174,7 +174,7 @@ hold off
 %% CORRECT MEDPC FILES
 if correctFiles
     if ~isempty(incorrect_session) || ~isempty(incorrect_type)
-        dT = corrections(beh_datapath, dT, mKey, incorrect_session, incorrect_type, expKey, main_folder, masterKey_flnm);
+        dT = corrections(beh_datapath, dT, mKey, incorrect_session, incorrect_type, expKey, main_folder, masterKey_flnm, experimentKey_flnm);
     else
         disp('No corrections to be made!')
         disp(' ')
@@ -189,7 +189,7 @@ end
 
 
 %%
-function [dT] = corrections(beh_datapath, dT, mKey, incorrect_session, incorrect_type, sdKey, main_folder, masterKey_flnm)
+function [dT] = corrections(beh_datapath, dT, mKey, incorrect_session, incorrect_type, sdKey, main_folder, masterKey_flnm, experimentKey_flnm)
     
     if ~isempty(incorrect_session)
         % correct incorrect sessions in medPC data files
