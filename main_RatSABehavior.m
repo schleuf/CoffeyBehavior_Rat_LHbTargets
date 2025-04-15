@@ -48,7 +48,7 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 
 runNum = 'all'; 
 runType = 'all'; 
-createNewMasterTable = false; 
+createNewMasterTable = true; 
 firstHour = false; 
 excludeData = true; 
 acquisition_thresh = 10; 
@@ -93,12 +93,12 @@ col_F_Cont = [198/255, 151/255, 0];
 %   the various figure types and matlab data saved. 
 % - Currently only daily & publication figures are saved with current date in
 %   the file name, so be aware of overwrite risk for other figures.
-allfig_savefolder = 'All Outputs\';
+allfig_savefolder = 'Outputs\';
 dailyfigs_savepath = 'Daily Figures\';
 pubfigs_savepath = 'Publication Figures\';
 indivIntakefigs_savepath = 'Individual Intake Figures\';
 groupIntakefigs_savepath ='Group Intake Figures\'; 
-groupOralFentOutput_savepath = 'Combined Oral Fentanyl Output\';
+groupOralFentOutput_savepath = 'Severity Output\';
 tabs_savepath = 'Behavior Tables\';
 
 
@@ -220,7 +220,8 @@ end
 %% ------------- WITHIN-SESSION ANALYSIS --------------
 
 if run_withinSession_analysis
-    [mTDL, mPressT, mDrugsLT] = WithinSession_Processes(mT, dex, sub_dir, indivIntake_figs, indivIntakefigs_savepath, groupIntake_figs, groupIntakefigs_savepath, saveTabs, tabs_savepath, figsave_type);
+    fig_colors = {[.5,.5,.5], col_F_c57, col_M_c57, col_F_CD1, col_M_CD1};
+    [mTDL, mPressT, mDrugsLT] = WithinSession_Processes(mT, dex, sub_dir, indivIntake_figs, indivIntakefigs_savepath, groupIntake_figs, groupIntakefigs_savepath, saveTabs, tabs_savepath, figsave_type, fig_colors);
 end
 
 %% ------------- LINEAR MIXED EFFECTS MODELS --------------
@@ -231,6 +232,9 @@ saveList = {};
 data = mT(mT.sessionType == 'Training',:);
 dep_var = ["Intake", "EarnedInfusions", "HeadEntries", "Latency", "ActiveLever", "InactiveLever"];
 lme_form = " ~ Sex*Session + (1|TagNumber)";
+xlabel('Responses/mg/mL'); % ??? why did kevin put this here
+ylabel('Fentanyl Intake (μg/kg)'); % ??? why did kevin put this here
+
 if ~isempty(data)
     Training_LMEstats = getLMEstats(data, dep_var, lme_form);
     if saveTabs

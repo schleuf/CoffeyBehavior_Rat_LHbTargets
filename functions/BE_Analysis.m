@@ -45,7 +45,7 @@ function [beT, beiT, BE_IndivFit, BE_GroupFit] = BE_Analysis(mT, expKey, BE_inta
         price=beT.unitPrice(beT.TagNumber==ID(i));
         price(in == 0) = [];
         in(in == 0) = []; 
-        price=price-min(price)+1;
+        % price=price-min(price)+1; Don't think this is necessary...
 
         fitX{i} = price;
         fitY{i} = log(in);
