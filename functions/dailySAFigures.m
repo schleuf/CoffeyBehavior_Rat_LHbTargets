@@ -76,20 +76,24 @@ function dailySAFigures(mT,runType, dex, figFold, figsave_type)
         
         % fig 11: AM animals
         figName{11} = fullfile(figFold,[expStr, '_IndividualBehaviorAMFig']);
-        grammOptions{11} = {'color', pT.Chamber, 'subset', pT.TimeOfBehavior == 'Morning'};
+        grammOptions{11} = {'color', pT.Chamber, 'subset', pT.TimeOfBehavior == 'Morning', 'group', pT.sessionType};
         orderOptions{11} = {};
         legOptions{11} = {'color', 'Chamber'};
 
         % fig 12: PM animals
         figName{12} = fullfile(figFold,[expStr, '_IndividualBehaviorPMFig']);
-        grammOptions{12} = {'color', pT.Chamber, 'subset', pT.TimeOfBehavior == 'Afternoon'};
+        grammOptions{12} = {'color', pT.Chamber, 'subset', pT.TimeOfBehavior == 'Afternoon', 'group', pT.sessionType};
         orderOptions{12} = {};
-        legOptions{12} = {'color', 'Chamber'};        
+        legOptions{12} = {'color', 'Chamber'}; 
+
+
     
         %% figure generation
     
         for f = 1:length(figName)
             if ~isempty(figName{f})
+                disp(f)
+                disp(figName(f))
                 plotDailies(pT, expStr, yVals, yLabs, figName{f}, figsave_type, 'GrammOptions', grammOptions{f}, 'OrderOptions', orderOptions{f}, 'LegOptions', legOptions{f}, 'ColorOptions', gramm_Strain_Acq_colors);
             end
         end

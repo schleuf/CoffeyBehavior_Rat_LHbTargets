@@ -146,16 +146,11 @@ end
 % get index for different experiments 
 dex = getExperimentIndex(mT, runNum, runType);
 
-% hackymakelifebetterlater
-if any(contains(fieldnames(dex), 'ER'))
-    if isempty(dex.ER)
-        runType(runType == 'ER') = [];
-    end
+if isempty(dex.ER)
+ runType(ru) = categorical(["ER", "BE", "SA"]);
 end
-if any(contains(fieldnames(dex), 'BE'))
-    if isempty(dex.BE)
-        runType(runType == 'BE') = [];
-    end
+if isempty(dex.BE)
+
 end
 
 % Determine Acquire vs Non-acquire
