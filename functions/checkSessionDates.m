@@ -2,7 +2,7 @@
 % SS 2025
 
 %% USER SETTINGS
-main_folder = 'C:\Users\sierra\OneDrive\Documents\GitHub\CoffeyBehavior_RatEdition';
+main_folder = pwd;
 masterKey_flnm = [main_folder, '\Coffey R00 Master Key.xlsx'];
 experimentKey_flnm = [main_folder, '\Experiment Key.xlsx'];
 masterTable_flnm = [main_folder, '\05-Feb-2025_masterTable.mat']; % used if createNewMasterTable == false 
