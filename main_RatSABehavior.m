@@ -48,7 +48,7 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 
 runNum = 'all'; 
 runType = 'all'; 
-createNewMasterTable = false; 
+createNewMasterTable = true; 
 firstHour = false; 
 excludeData = true; 
 acquisition_thresh = 10; 
@@ -132,7 +132,7 @@ expKey = readtable(experimentKey_flnm);
 
 %% ------------- IMPORT DATA --------------
 if createNewMasterTable
-    mT = createMasterTable(main_folder, beh_datapath, masterSheet_flnm,experimentKey_flnm);
+    mT = createMasterTable(beh_datapath, masterSheet_flnm, experimentKey_flnm, 'data_masterTable');
 else
     load(masterTable_flnm)
 end

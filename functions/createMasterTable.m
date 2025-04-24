@@ -1,24 +1,13 @@
-function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, experimentKey_flnm)
+function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_flnm, savename)
     showWarnings = false;
     
     % Import Master Key
-    addpath(genpath(main_folder))
     opts = detectImportOptions(masterKey_flnm);
     opts = setvartype(opts,{'TagNumber','ID','Cage','Sex','TimeOfBehavior', 'LHbTarget', 'LHbAAV'},'categorical'); % Must be variables in the master key
     mKey=readtable(masterKey_flnm,opts);
     
     % Import Experiment Keyp.
     expKey = readtable(experimentKey_flnm);
-
-    % Deal with annoying formatting problems with dates from sheet
-    keyDate = expKey.Date;
-    temp = cell([height(expKey), 1]);
-    for kd = 1:length(keyDate)
-        d = char(keyDate{kd});
-        d = char(strrep(d, "'", ''));
-        temp{kd} = d;
-    end
-    expKey.Date = temp;
 
     %% Import & process MedPC data
     mT=table; % Initialize Master Table
@@ -60,7 +49,7 @@ function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, exp
                 
                 % Get session type, fentanyl concentration, and intake from expKey
                 fl_date = varTable.Date(height(varTable));
-                expKey_ind = find(strcmp(expKey.Date, string(fl_date)) & strcmp(expKey.Experiment,string(Experiment))); % both cases necessary for when multiple experiments are run on the same day (run 4)
+                expKey_ind = find(expKey.Date == fl_date & strcmp(expKey.Experiment,string(Experiment))); % both cases necessary for when multiple experiments are run on the same day (run 4)
                 
                 
                 if isempty(expKey_ind) | length(expKey_ind) > 1
@@ -95,6 +84,9 @@ function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, exp
                     slideSession = varTable.Session + 2;
                 elseif sessionType == 'Reinstatement' || sessionType == 'ReTraining'
                     slideSession = varTable.Session + 3;
+                else
+                    disp('weeee')
+                    slideSession = varTable.Session;
                 end
 
                 % Special case latency calc for Extinction trials
@@ -123,5 +115,8 @@ function [mT] = createMasterTable(main_folder, beh_datapath, masterKey_flnm, exp
     mT=innerjoin(mT,mKey,'Keys',{'TagNumber'},'RightVariables',{'Sex','TimeOfBehavior','Chamber', 'LHbTarget', 'LHbAAV'});
     
     %%
-    save('data_masterTable','mT');
+    save(savename,'mT');
+    
+    correctFiles = true;
+    mT = checkSessionDates(mT, mKey, expKey, correctFiles, savename);
 end
