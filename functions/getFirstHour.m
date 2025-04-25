@@ -10,8 +10,7 @@ function [hmT] = getFirstHour(mT)
     % earned infusions count == rewarded leverpresses
     % total infusions count == infusion on
     
-    copyVars = {'TagNumber', 'Session', 'sessionType', 'slideSession', ...
-               'Strain', 'Sex', 'TimeOfBehavior', 'Chamber', 'Acquire'};
+    copyVars = {'TagNumber', 'Session', 'sessionType', 'slideSession','Sex','TimeOfBehavior', 'LHbTarget', 'LHbAAV', 'Chamber', 'Acquire'};
     hmT = mT(:, copyVars);
 
     hourVars = {'ActiveLever', 'InactiveLever', 'HeadEntries', 'EarnedInfusions' ...
