@@ -48,8 +48,8 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 
 runNum = 'all'; 
 runType = 'all'; 
-createNewMasterTable = true; 
-firstHour = true; 
+createNewMasterTable = false; 
+firstHour = false; 
 excludeData = true; 
 acquisition_thresh = 10; 
 acquisition_testPeriod = {'Training', 'last', 5};
@@ -69,10 +69,11 @@ run_individualSusceptibility_analysis = false;
 %   groupIntake_figs: If true, generate figures grouped by sex, strain, etc. for animal behavior across & within sessions
 %   groupOralFentOutput_figs: If true, generate severity figures
 %   figsave_type: Cell of char variables listing all image data types to save figures as
+
 saveTabs = true;
 pAcq = true;
 dailyFigs = true;
-pubFigs = false;
+pubFigs = true;
 indivIntake_figs = false;
 groupIntake_figs = false;
 groupOralFentOutput_figs = false;
