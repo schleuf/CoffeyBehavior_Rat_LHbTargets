@@ -1,4 +1,4 @@
-function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_flnm, savename)
+function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_flnm, savename, maxLatency)
     showWarnings = false;
     
     % Import Master Key
@@ -29,7 +29,7 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
                 [varTable, eventCode, eventTime] = importRatOralSA(fullfile(Files(i).folder, Files(i).name));
                 
                 % Calculate Variables Using Raw Data
-                [varTable] = rawVariableExtractor(varTable, eventCode, eventTime);
+                [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLatency);
                
                 % Find this animal's index in mKey
                 tag = varTable.TagNumber(height(varTable));
@@ -99,8 +99,10 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
                     seekHE = HE(unique(cell2mat(seekHE(~cellfun(@isempty, seekHE)))));
                     seekLP = arrayfun(@(x) find(actLP < x, 1, 'last'), seekHE, 'UniformOutput', false);
                     seekLP = actLP(unique(cell2mat(seekLP(~cellfun(@isempty, seekLP)))));
-                    varTable.allLatency = {seekHE-seekLP};
-                    varTable.Latency = mean(varTable.allLatency{1});
+                    allLatency = seekHE-seekLP;
+                    allLatency = allLatency(allLatency <= maxLatency);
+                    varTable.allLatency = {allLatency};
+                    varTable.Latency = mean(allLatency);
                 end
                 
                 % Concatenate the Master Table

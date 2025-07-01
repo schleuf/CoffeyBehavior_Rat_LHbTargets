@@ -48,11 +48,12 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 
 runNum = 'all'; 
 runType = 'all'; 
-createNewMasterTable = false; 
-firstHour = false; 
+createNewMasterTable = true; 
+firstHour = true; 
 excludeData = true; 
 acquisition_thresh = 10; 
 acquisition_testPeriod = {'Training', 'last', 5};
+maxLatency = 360; % maximum time in seconds between an active lever press and head entry to be factored into latency calculations
 interpWeights = true;
 interpWeight_sessions = [0,6,11,16,21];
 run_BE_analysis = false;
@@ -133,7 +134,7 @@ expKey = readtable(experimentKey_flnm);
 
 %% ------------- IMPORT DATA --------------
 if createNewMasterTable
-    mT = createMasterTable(beh_datapath, masterSheet_flnm, experimentKey_flnm, 'data_masterTable');
+    mT = createMasterTable(beh_datapath, masterSheet_flnm, experimentKey_flnm, 'data_masterTable', maxLatency);
 else
     load(masterTable_flnm)
 end
@@ -176,7 +177,7 @@ end
 
 % Get data from the first hour of the session 
 if firstHour
-    hmT = getFirstHour(mT);
+    hmT = getFirstHour(mT, maxLatency);
 end
 
 %% ------------- GROUP STATISTICS --------------
