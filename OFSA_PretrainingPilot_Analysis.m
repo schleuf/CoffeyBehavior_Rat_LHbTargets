@@ -1,0 +1,86 @@
+clear
+close all
+
+main_folder = pwd;
+cd(main_folder)
+addpath(genpath(main_folder))
+
+PP_mT = load('data_masterTable_PP_corrected.mat').mT;
+% V2_mT = load ('data_masterTable_V2.mat').mT;
+
+% just looking at PP rn
+runNum = 'all'; 
+runType = 'SA';
+
+runNum = categorical(string(runNum));
+runType = categorical(string(runType));
+if runType == 'all'
+    runType = categorical(["ER", "BE", "SA"]);
+end
+
+dex = getExperimentIndex(PP_mT, runNum, runType);
+
+
+% ADD METRIC COLUMNS 
+tabs = {PP_mT};
+
+%1st fig grid
+% FreeInfusions
+% earned infusions EC = 97, all infusions EC = 17
+
+% 2nd fig grid
+% Row 1: Active/hour, Inactive/hour, HeadEntries/hour, 
+% Row 2: Intake/hour, EarnedInfusions/hour, FreeInfusions/hour
+mets = {'ActiveLever', 'InactiveLever', 'HeadEntries', 'EarnedInfusions', 'FreeInfusions'};
+tack = table({'ActiveLever/Hour', 'InactiveLever/Hour', 'HeadEntries/Hour', 'EarnedInfusions/Hour', 'FreeInfusions/Hour'});
+
+countbad = 0;
+for t = 1:length(tabs)
+    mT = tabs{t};
+    for r = 1:height(mT)
+        dur = max(mT.eventTime{r} - min(mT.eventTime{r}));
+        earned = mT.EarnedInfusions(r);
+        tot = mT.TotalInfusions(r);
+        if tot < earned
+            disp('total less than earned')
+            disp(mT.ID(r))
+            disp(mT.Date(r));
+            disp(tot)
+            disp(earned)
+            disp(' ')
+        end
+
+        % for m = 1:length(mets)
+        %     tack.([mets{m},'/Hour'])(r) = mT.(mets{m})(r) / dur;
+        % end
+    end
+    tabs{t} = mT;
+end
+
+
+% 3rd fig grid
+% time to first press
+
+% inter-infusion interval
+
+% presses per infusion
+
+PP_mT = tabs{1};
+
+% PLOTTING PP1-3 DATA
+% PP_SAFigures(PP_mT, runType, dex, 'PP_figs\fullhour_', {'.jpg'});
+
+% PLOTTING V2 v PP1 DATA
+
+% FIRST HALF HOUR
+% %get first half hour 
+% PP_0_30 = getTimespanData(PP_mT, 0, 1800, 360);
+% PP_SAFigures(PP_0_30, runType, dex, 'PP_figs\first30_', {'.jpg'});
+for r = 1:height(PP_mT)
+    if PP_mT.EarnedInfusions(r) < 0
+        disp(PP_mT.ID(r))
+        disp(PP_mT.Date(r))
+        disp(' ')
+    end
+end
+

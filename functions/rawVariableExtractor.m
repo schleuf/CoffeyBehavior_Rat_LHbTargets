@@ -18,8 +18,8 @@ function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLa
 % 
 % events added to eventCode and eventTime:
 %    95 time-filtered head entries
-%    96 rewarded lever presses preceding head entries 
-%    97 rewarded lever presses (includes lever presses not followed by a head entry before the next reward)
+%    96 rewarded lever presses (includes lever presses not followed by a head entry before the next reward)  
+%    97 rewarded lever presses preceding head entries
 %    98 rewarded head entries following active lever presses
 %    99 rewarded head entries (includes head entries following human-given reward + cue)
     
@@ -51,32 +51,49 @@ function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLa
     time_rewHE = unique(nextHE, 'stable'); % Ensure uniqueness
     varTable.rewardedHeadEntries = length(time_rewHE);
 
-    time_rewLP = eventTime(eventCode == 3 | eventCode == 4);
+    time_actLP = eventTime(eventCode == 3 | eventCode == 4); % this is ACTIVE LEVER PRESS
+    % SSnote: COME BACK TO THIS, FIND OUT WHY EARNEDINFUSIONS IS LOW FREQUENTLY AND SOMETIMES NEGATIVE
+    varTable.ActiveLever = length(time_actLP);
+    allInf = eventTime(eventCode == 17);
+    varTable.TotalInfusions = length(allInf);
+    time_rewLP = [];
+    for a = 1:length(time_actLP)
+        sub = allInf-time_actLP(a);
+        coinc = find(sub > 0 & sub < 1);
+        if ~isempty(coinc)
+            if length(coinc) > 1
+                disp('blehhhh')
+            end
+            time_rewLP = [time_rewLP; time_actLP(a)];
+        end
+    end
+    varTable.EarnedInfusions = length(time_rewLP);
+
+    % if varTable.TotalInfusions < varTable.EarnedInfusions
+    %     disp(varTable.TagNumber)
+    %     disp(varTable.Date)
+    %     disp(varTable.ActiveLever)
+    %     disp(varTable.TotalInfusions)
+    %     disp(varTable.EarnedInfusions)
+    %     disp(' ')
+    % end
+  
     % filter out rewarded lever presses not followed by head entries and
     % rewarded head entries not preceded by active lever presses (freebies)
-    time_rewLP_preceding_HE = arrayfun(@(x) time_rewLP(find(time_rewLP < x, 1, 'last')), time_rewHE, 'UniformOutput', false);
+    time_rewLP_preceding_HE = arrayfun(@(x) time_actLP(find(time_actLP < x, 1, 'last')), time_rewHE, 'UniformOutput', false);
     time_rewLP_preceding_HE = cell2mat(time_rewLP_preceding_HE(~cellfun(@isempty, time_rewLP_preceding_HE))); 
     time_rewLP_preceding_HE = unique(time_rewLP_preceding_HE, 'stable');
     
-    time_HE_following_rewLP = arrayfun(@(x) time_rewHE(find(time_rewHE > x, 1, 'first')), time_rewLP, 'UniformOutput', false);
+    time_HE_following_rewLP = arrayfun(@(x) time_rewHE(find(time_rewHE > x, 1, 'first')), time_actLP, 'UniformOutput', false);
     time_HE_following_rewLP = cell2mat(time_HE_following_rewLP(~cellfun(@isempty, time_HE_following_rewLP)));
     time_HE_following_rewLP = unique(time_HE_following_rewLP, 'stable');
     
     % filter for the lever presses that precede the rewarded head entries and get dose per head entry
-    doseHE = arrayfun(@(x) sum(time_rewLP < x), time_HE_following_rewLP); % Compute the number of rewLP timestamps before each rewHE timestamp
+    doseHE = arrayfun(@(x) sum(time_actLP < x), time_HE_following_rewLP); % Compute the number of rewLP timestamps before each rewHE timestamp
     if ~isempty(doseHE)
         doseHE = [doseHE(1); diff(doseHE)]; % Compute the difference between successive elements to get the count per interval
     end
     varTable.doseHE = {doseHE};
-
-    % calculate earned and total infusions 
-    if varTable.Session == 26 % SSnote: maybe this get's moved to createNewMasterTable too
-        varTable.EarnedInfusions = 0;
-    elseif varTable.TotalInfusions == 0
-        varTable.EarnedInfusions = 0;
-    else
-        varTable.EarnedInfusions = length(time_rewLP);
-    end
 
     % calculate all and mean latency
     varTable.allLatency = {time_HE_following_rewLP - time_rewLP_preceding_HE};
@@ -91,7 +108,7 @@ function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLa
     
     % get number of active and inactive lever presses that occur during ITI
     % SSnote: these are encoded as 20 and 21, don't need to calc them 
-    varTable.itiActiveLever= varTable.ActiveLever - varTable.EarnedInfusions;
+    varTable.itiActiveLever = varTable.ActiveLever - varTable.EarnedInfusions;
     inLP=eventTime(eventCode==23);% 23  = Inactive Lev press
     % % SS hack for absent inactive lever event codes in some sessions...
     % if isempty(inLP)
@@ -105,26 +122,47 @@ function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLa
     %     end
     % end
     inITI=[]; % Initialize in case there are no inLPs during ITI   
-    for j = 1:height(time_rewLP)
-        inITI(j,1)=sum(inLP>time_rewLP(j) & inLP<(time_rewLP(j)+10)); % Which inactive LPs occur in the 10s following a reward (the ITI)
+    for j = 1:height(time_actLP)
+        inITI(j,1)=sum(inLP>time_actLP(j) & inLP<(time_actLP(j)+10)); % Which inactive LPs occur in the 10s following a reward (the ITI)
     end
     varTable.itiInactiveLever=sum(inITI);
     
     % append eventCode and eventTime for new variables 
     eventCode=[eventCode; ...
                repmat(95, [height(time_HE), 1]); ...
-               repmat(96,[height(time_rewLP),1]); ... 
+               repmat(96,[height(time_actLP),1]); ... 
                repmat(97,[height(time_rewLP_preceding_HE),1]); ...
                repmat(98,[height(time_rewHE),1]); ...
                repmat(99,[height(time_HE_following_rewLP),1])];
     
     eventTime = [eventTime; ...
                  time_HE; ...
-                 time_rewLP; ... % lever presses preceding earned infusion
+                 time_actLP; ... % lever presses preceding earned infusion % SSnote: why did I add this? 
                  time_rewLP_preceding_HE; ...
                  time_rewHE; ... % head entries following cue light
                  time_HE_following_rewLP];
 
+
+    % if length(find(eventCode==4)) ~= varTable.EarnedInfusions 
+    %     disp(varTable.EarnedInfusions)
+    %     disp(length(find(eventCode==3)))
+    %     disp(length(find(eventCode==4)))
+    %     disp(length(find(eventCode==96)))
+    %     disp(' ')
+    % end
+
+    % if varTable.EarnedInfusions < 0 
+    %     disp(varTable.Date)
+    %     disp(varTable.Session)
+    %     disp(varTable.TagNumber)
+    %     disp(varTable.EarnedInfusions)
+    %     disp(' ')
+    % end
+
     varTable.eventCode={eventCode};
     varTable.eventTime={eventTime};
+
+
+
+    
 end

@@ -1,7 +1,7 @@
-function [Acquire] = getAcquire(mT, acquisition_thresh, acquisition_testPeriod, pAcq)
+function [Acquire] = getAcquire(mT, acquisition_thresh, acquisition_testPeriod, pAcq, analyze_subjects)
     IDs=unique(mT.TagNumber);
-    mT = sortrows(mT,'TagNumber','ascend');
     Acq = nan(size(IDs));
+    this_set = ismember(unique(mT.ID),analyze_subjects);
     Acquire = categorical(nan([height(mT), 1]));
     
     sessionType = acquisition_testPeriod{1};
@@ -44,6 +44,15 @@ function [Acquire] = getAcquire(mT, acquisition_thresh, acquisition_testPeriod, 
        plot([acquisition_thresh acquisition_thresh],[0 15],'--r')
        ylabel('Number of Animals');
        xlabel('Rewards Earned (Training Avg)');
+       title('ALL ANIMALS IN MASTER TABLE')
+       set(gca,'LineWidth',1.5,'TickDir','out','FontSize',12);
+       
+       figure('Position',[1 300 275 250],'color','w'); histogram(acqDist(this_set), 50);
+       box off; hold on;
+       plot([acquisition_thresh acquisition_thresh],[0 15],'--r')
+       ylabel('Number of Animals');
+       xlabel('Rewards Earned (Training Avg)');
+       title('ANIMALS IN CURRENT ANALYSIS SET' )
        set(gca,'LineWidth',1.5,'TickDir','out','FontSize',12);
     end
 end

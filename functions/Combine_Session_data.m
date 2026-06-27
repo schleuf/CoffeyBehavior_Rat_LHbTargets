@@ -1,0 +1,92 @@
+% for the freak scenario where you had to run multiple sessions in one day
+% takes the mT structure from teh main_RatSABehavior script, looks for
+% instances of animals doing two sessions in one day, then stitches them
+% together. 
+% NOTE TIME CODES WILL BE MESSED UP W/ RESPECT TO WEBCAMS AND USVS
+% NOTE that variables itiActiveLever and itiInactiveLever are not updated
+
+masterTable_flnm = 'data_masterTable_PP.mat';
+savename = 'data_masterTable_PP_corrected.mat';
+load(masterTable_flnm)
+
+new_mT = table; 
+
+IDs = unique(mT.ID);
+for i = 1:length(IDs)
+    if i == 2
+        disp('bleh')
+    end
+    id = IDs(i);
+    id_data = mT(mT.ID == id, :);
+    id_sess = unique(id_data.Session);
+    for s = 1:length(id_sess)
+        num_thisSess = length(find(id_data.Session == id_sess(s)));
+        if num_thisSess > 1
+            paths = id_data.FileName(find(id_data.Session == id_sess(s)));
+            mins = nan(length(paths), 1);
+            for p = 1:length(paths)
+                split = strsplit(paths{p}, '\');
+                flnm = split{length(split)};
+                split = strsplit(flnm, '_');
+                time = split{2};
+                split = strsplit(time, '.');
+                time = split{1};
+                h = str2num(time(1:2));
+                m = str2num(time(4:5)); 
+                mins(p) = h * 60 + m;
+            end
+            [sorted, argSort] = sort(mins);
+            first_ind = argSort(find(argSort == 1));
+            temp_row = mT(find(strcmp(mT.FileName, paths{first_ind})),:);
+            disp(temp_row.ID)
+            temp_length = max(temp_row.eventTime{1});
+            add_field = {'EarnedInfusions', 'TotalInfusions', 'HeadEntries', 'ActiveLever', 'InactiveLever', ...
+                          'rewardedHeadEntries', 'totalIntake'};
+            for r = 2:num_thisSess
+                this_ind = argSort(find(argSort == r));
+                this_row = mT(find(strcmp(mT.FileName, paths{this_ind})),:);
+                
+                % Add Fields
+                for a = 1:length(add_field)
+                    % disp(add_field(a))
+                    % disp(temp_row.(add_field{a}))
+                    % disp(this_row.(add_field{a}))
+                    temp_row.(add_field{a}) = temp_row.(add_field{a}) + this_row.(add_field{a});
+                    % disp(temp_row.(add_field{a}))
+                end
+
+                % Latency
+                if ~isempty(this_row.allLatency{1}(:))
+                    temp_row.allLatency{1} = [temp_row.allLatency{1}(:); this_row.allLatency{1}(:)];
+                    temp_row.Latency = mean(temp_row.allLatency{1});
+                end
+                
+                % Event Times & Event Codes
+                time_between = mins(r)*60 - (mins(1)*60 + temp_length);
+                time_buff = temp_length + time_between;
+                % disp('OG')
+                % disp(max(temp_row.eventTime{1}))
+                % disp(length(temp_row.eventTime{1}))
+                % disp('THIS')
+                % disp(max(this_row.eventTime{1}))
+                % disp(length(this_row.eventTime{1}))
+                temp_row.eventTime{1} = [temp_row.eventTime{1}(:); this_row.eventTime{1}(:) + time_buff];
+                temp_row.eventCode{1} = [temp_row.eventCode{1}(:); this_row.eventCode{1}(:)];
+                % disp('CHANGE')
+                % disp(max(temp_row.eventTime{1}))
+                % disp(length(temp_row.eventTime{1}))
+                % disp(temp_row)
+                % disp(' ')
+            end
+            new_mT = [new_mT; temp_row];
+            
+        else
+            new_mT = [new_mT; id_data(find(id_data.Session == id_sess(s)),:)];
+        end
+        % disp(new_mT)
+    end
+end
+
+mT = new_mT;
+
+save(savename,'mT');

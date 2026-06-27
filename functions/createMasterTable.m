@@ -30,26 +30,37 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
                 
                 % Calculate Variables Using Raw Data
                 [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLatency);
-               
+
                 % Find this animal's index in mKey
-                tag = varTable.TagNumber(height(varTable));
-                tag = strsplit(char(tag), '_');
-                tag = categorical(string(tag{2}));
-                mKey_ind = find(mKey.TagNumber==tag);
+                IDtag = varTable.TagNumber(height(varTable));
+                if contains(char(IDtag), '_')
+                    split = strsplit(char(IDtag), '_');
+                    tag = categorical(string(split{2}));
+                    id = categorical(string(split{1}));
+                    mKey_ind = find(mKey.TagNumber==tag & mKey.ID == id);
+                else
+                    id = IDtag;
+                    mKey_ind = find(mKey.ID == id);
+                    tag = mKey.TagNumber(mKey_ind);
+                end
+
                 varTable.TagNumber = tag;
-                
+
+                varTable.ID = id;
                 % Get experiment type from logical indexing in mKey
                 if mKey.Extinction(mKey_ind) && mKey.Reinstatement(mKey_ind) && ~mKey.BehavioralEconomics(mKey_ind)
                     Experiment = categorical("ER");
                 elseif mKey.BehavioralEconomics(mKey_ind) % don't exclude based on indication of extinction and reinstatement in mKey so we can keep the BE data from run 2
                     Experiment = categorical("BE");
+                elseif mKey.SelfAdministration
+                    Experiment = categorical("SA");
                 else
                     Experiment = categorical("undefined");
                 end
                 
                 % Get session type, fentanyl concentration, and intake from expKey
                 fl_date = varTable.Date(height(varTable));
-                expKey_ind = find(expKey.Date == fl_date & strcmp(expKey.Experiment,string(Experiment))); % both cases necessary for when multiple experiments are run on the same day (run 4)
+                expKey_ind = find(datetime(expKey.Date) == fl_date & strcmp(expKey.Experiment,string(Experiment))); % both cases necessary for when multiple experiments are run on the same day (run 4)
                 
                 
                 if isempty(expKey_ind) | length(expKey_ind) > 1
@@ -76,16 +87,17 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
                 end
 
                 % slideSession - Slide Days for looks
-                if sessionType == 'PreTraining'
+                if sessionType == 'SaccharineTraining'
                     slideSession = varTable.Session;
-                elseif sessionType == 'Training'
+                elseif sessionType == 'PreTraining' || sessionType == 'SaccharineFade'
+                    slideSession = varTable.Session;
+                elseif sessionType == 'Training' || sessionType == 'OpiateTraining'
                     slideSession = varTable.Session + 1;
                 elseif sessionType == 'Extinction' || sessionType == 'BehavioralEconomics'
                     slideSession = varTable.Session + 2;
                 elseif sessionType == 'Reinstatement' || sessionType == 'ReTraining'
                     slideSession = varTable.Session + 3;
                 else
-                    disp('weeee')
                     slideSession = varTable.Session;
                 end
 
@@ -104,9 +116,22 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
                     varTable.allLatency = {allLatency};
                     varTable.Latency = mean(allLatency);
                 end
+
+                % calculate earned and total infusions 
+                if sessionType == 'Extinction' || sessionType == 'Reinstatement' % SSnote: maybe this get's moved to createNewMasterTable too % Yep definitely, this should be referencing the experiment key
+                    varTable.EarnedInfusions = 0;
+                end
                 
                 % Concatenate the Master Table
                 drugIntakeTab = table(sessionType, slideSession, Experiment, Run, Concentration, DoseVolume, Intake, totalIntake);
+                if varTable.EarnedInfusions < 0 
+                    disp(varTable.Date)
+                    disp(varTable.Session)
+                    disp(varTable.TagNumber)
+                    disp(varTable.EarnedInfusions)
+                    disp(' ')
+                end
+
                 mT = [mT; [varTable, drugIntakeTab]];
             end
         end
@@ -114,11 +139,12 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
     end
     
     % Join Master Variable Table with Key to Include Grouping Variables
-    mT=innerjoin(mT,mKey,'Keys',{'TagNumber'},'RightVariables',{'Sex','TimeOfBehavior','Chamber', 'LHbTarget', 'LHbAAV'});
+    mT=innerjoin(mT,mKey,'Keys',{'ID'},'RightVariables',{'Sex','TimeOfBehavior','Chamber', 'LHbTarget', 'LHbAAV'});
     
     %%
     save(savename,'mT');
     
     correctFiles = true;
     mT = checkSessionDates(mT, mKey, expKey, correctFiles, savename);
+    
 end

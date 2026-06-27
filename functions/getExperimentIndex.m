@@ -14,10 +14,12 @@ function [dex] = getExperimentIndex(mT, runNum, runType)
     dex.all = [];
     for e = 1:length(runType)
         if runType(e) == 'SA'
-            dex.SA = find(((mT.sessionType == 'Training') | (mT.sessionType == 'PreTraining')) & runNum_inds);
+            dex.SA = find(((mT.sessionType == 'Training') | (mT.sessionType == 'PreTraining') | (mT.sessionType == 'SaccharineTraining') | mT.sessionType == 'SaccharineFade' | mT.sessionType == 'OpiateTraining') & runNum_inds);
         else
             dex.(string(runType(e))) = find((mT.Experiment == runType(e)) & runNum_inds);
         end
         dex.all = union(dex.all, dex.(string(runType(e))));
+        
     end
+
 end

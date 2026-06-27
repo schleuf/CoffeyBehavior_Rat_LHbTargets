@@ -5,9 +5,10 @@ function [mT] = checkSessionDates(mT, mKey, expKey, correctFiles, savename)
     %% EXPERIMENT TYPE DEFINITIONS FOR LOGICAL INDEXING
     % need to updating the indexing from this to exclude things that include
     % these session types but also include unstated session types. works for now. 
-    exp_types = dictionary(["ER", "BE"], ...
+    exp_types = dictionary(["ER", "BE", "SA"], ...
                             {{'SelfAdministration', 'Extinction', 'Reinstatement'}, ...
-                             {'SelfAdministration', 'BehavioralEconomics'}});
+                             {'SelfAdministration', 'BehavioralEconomics'}, ...
+                             {'SelfAdministration'}});
     
     
     %% PULL SPECIFIC RUN & EXPERIMENT TYPE TO CHECK
@@ -35,13 +36,13 @@ function [mT] = checkSessionDates(mT, mKey, expKey, correctFiles, savename)
     incorrect_type = [];
     
     for d = 1:length(expKey.Date)
-        key_date = expKey.Date(d);
+        key_date = datetime(expKey.Date(d));
         key_session = expKey.Session(d);
         key_type = expKey.SessionType(d);
         key_exp = expKey.Experiment(d);
         key_run = expKey.Run(d);
 
-        wrong_session = find(date== key_date & key_run == run & sess ~= key_session & strcmp(mT.Experiment, char(key_exp)));
+        wrong_session = find(date == key_date & key_run == run & sess ~= key_session & strcmp(mT.Experiment, char(key_exp)));
         wrong_type = find(date == key_date & key_run == run & type ~= key_type & strcmp(mT.Experiment, char(key_exp)));
     
         incorrect_session = [incorrect_session; wrong_session];
@@ -72,7 +73,7 @@ function [mT] = checkSessionDates(mT, mKey, expKey, correctFiles, savename)
     uniType = unique(type);
     leg = uniType;
     
-    for uni = 1:length(uniType)
+    for uni = 1:length(uniType) % plots different session types in different colors
         ind = find(type == uniType(uni));
         scatter(date(ind), sess(ind));
     end
@@ -86,7 +87,7 @@ function [mT] = checkSessionDates(mT, mKey, expKey, correctFiles, savename)
         leg = [leg; categorical("incorrect session type")];
     end
     
-    ylim([nanmin(sess) - 1, nanmax(sess) + ((nanmax(sess)-nanmin(sess))/2)])
+    ylim([nanmin(sess) - 1, nanmax(sess) + 3])
     legend(leg, 'Location', 'northwest')
     xlabel('Date')
     ylabel('Session #')
@@ -97,6 +98,7 @@ function [mT] = checkSessionDates(mT, mKey, expKey, correctFiles, savename)
     if correctFiles
         if ~isempty(incorrect_session) || ~isempty(incorrect_type)
             mT = corrections(mT, mKey, incorrect_session, incorrect_type, expKey);
+            
         else
             disp('No corrections to be made!')
             disp(' ')
@@ -127,25 +129,26 @@ end
 
 
 function [mT] = correctSessions(mT, mKey, incorrect_session, sdKey)
-    strStart = 15;
     strEnd = 20;
-    template = '    15:       ';
+    template = '    15:';
     disp('updating incorrect session numbers in medPC files...')
     for is = 1:length(incorrect_session)
         this_date = mT.Date(incorrect_session(is));
         this_file = mT.FileName{incorrect_session(is)};
         this_tag = mT.TagNumber(incorrect_session(is));
-        mKey_ind = (mKey.TagNumber==this_tag);
+        this_id = mT.ID(incorrect_session(is));
+        mKey_ind = (mKey.TagNumber==this_tag & mKey.ID == this_id);
         this_exp = mKey.Experiment(mKey_ind);
         this_exp = this_exp{1};
         this_run = mKey.Run(mKey_ind);
 
-        sdKey_ind = find(strcmp(sdKey.Date,char(this_date)) .* (sdKey.Run == this_run) .* strcmp(sdKey.Experiment, this_exp));
+        sdKey_ind = find((datetime(sdKey.Date) == this_date) & (sdKey.Run == this_run) & (categorical(sdKey.Experiment) == this_exp));
         corr_sess = sdKey.Session(sdKey_ind);
         char_sess = [num2str(corr_sess), '.000'];
-        if corr_sess/10 < 1
-            char_sess = [' ', char_sess];
-        end
+        len_sess = length(char_sess) - 4;
+        numspc = 9 - len_sess;
+        char_sess = [blanks(numspc), char_sess];
+    
         fileContent = fileread(this_file);
         lines = splitlines(fileContent);
         
@@ -161,7 +164,12 @@ function [mT] = correctSessions(mT, mKey, incorrect_session, sdKey)
         end
 
         tmp = lines{chng_line};
-        tmp(strStart:strEnd) = char_sess;
+        tmp(length(template)+1:strEnd) = char_sess;
+
+        disp(lines{chng_line})
+        disp(tmp)
+        disp(" ")
+
         lines{chng_line} = tmp;
         
         fid = fopen(this_file, 'w');
