@@ -47,16 +47,16 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 %                       value giving the number of days to average across, or it will default to 1.  
 %   pAcq:true: plot aquisition histogram to choose threshold
 
-runNum = '1_2_7'; 
+runNum = '7'; 
 runType = 'ER'; 
-createNewMasterTable = true; 
+createNewMasterTable = false; 
 firstHour = false; 
 interpWeights = true;
 run_BE_analysis = false;
-run_withinSession_analysis = true;
+run_withinSession_analysis = false;
 run_individualSusceptibility_analysis = false;
 
-excludeData = true; % reads from the IncludeBehavior and RemoveSessions columns of the master key
+excludeData = false; % reads from the IncludeBehavior and RemoveSessions columns of the master key
 acquisition_thresh = 10; % minimum average earned rewards per session during acquisition_testPeriod for animal to be determined "Acquirer"
 acquisition_testPeriod = {'Training', 'last', 5};
 maxLatency = 360; % maximum time in seconds between an active lever press and head entry to be factored into latency calculations
@@ -74,11 +74,11 @@ maxLatency = 360; % maximum time in seconds between an active lever press and he
 
 saveTabs = true;
 pAcq = true; 
-dailyFigs = true;
+dailyFigs = false;
 eventRastFigs = false; 
 pubFigs = false;
 indivIntake_figs = false;
-groupIntake_figs = true;
+groupIntake_figs = false;
 groupOralFentOutput_figs = false; % only used in Behavioral Economics analysis       
 figsave_type = {'.png'};
 
@@ -175,10 +175,10 @@ groupStats = struct;
 if firstHour; hour_groupStats = struct; end
 for et = 1:length(runType)
     groupStats.(char(runType(et))) = grpstats(mT(dex.(char(runType(et))),:), ["Sex", "LHbTarget", "LHbAAV", "Session"], ["mean", "sem"], ...
-                          "DataVars",["ActiveLever", "HE_median_cue_latencies", "EarnedInfusions", "HeadEntries", "Latency", "Intake"]);
+                          "DataVars",["ActiveLever", "HE_median_cue_latency", "EarnedInfusions", "HeadEntries", "Latency", "Intake"]);
     if firstHour
         hour_groupStats.(char(runType(et))) = grpstats(hmT(dex.(char(runType(et))),:),["Sex", "LHbTarget", "LHbAAV", "Session"], ["mean", "sem"], ...
-                                   "DataVars",["ActiveLever", "InactiveLever", "EarnedInfusions", "HeadEntries", "HE_median_cue_latencies", "Intake"]);
+                                   "DataVars",["ActiveLever", "InactiveLever", "EarnedInfusions", "HeadEntries", "HE_median_cue_latency", "Intake"]);
     end
     if saveTabs
         writeTabs(mT(dex.(char(runType(et))),:), [sub_dir, tabs_savepath, 'run_', char(runNum), '_exp_', char(runType(et)), '_inputData'], {'.mat', '.xlsx'})
@@ -321,13 +321,11 @@ statsname=[sub_dir, tabs_savepath, 'Oral SA Group Stats '];
 saveList = {};
 % Training
 data = mT(mT.sessionType == 'Training',:);
-dep_var = ["Intake", "EarnedInfusions", "HeadEntries", "HE_median_cue_latencies", "ActiveLever", "InactiveLever", "interval_actLP", "UnpursuedCues"];
+dep_var = ["Intake", "EarnedInfusions", "HeadEntries", "HE_median_cue_latency", "ActiveLever", "InactiveLever", "median_interval_actLP", "UnpursuedCues"];
 lme_form = " ~ Sex*Session + (1|TagNumber)";
-xlabel('Responses/mg/mL'); % ??? why did kevin put this here
-ylabel('Fentanyl Intake (μg/kg)'); % ??? why did kevin put this here
 
 if ~isempty(data)
-    Training_LMEstats = getLMEstats(data, dep_var, lme_form);
+    Training_LMEstats = getLMEstats(data, dep_var, lme_form, true); % last parameter is "excludenans"
     if saveTabs
         save([statsname, 'SA'], 'Training_LMEstats');
     end
@@ -337,18 +335,18 @@ if any(ismember(runType,'ER'))
 
     % Extinction
     data = mT(mT.sessionType=='Extinction',:);
-    dep_var = ["HeadEntries", "HE_median_actLP_latencies", "ActiveLever", "InactiveLever"];
+    dep_var = ["HeadEntries", "HE_median_actLP_latency", "ActiveLever", "InactiveLever"];
     lme_form = " ~ Sex*Session + (1|TagNumber)";
     if ~isempty(data)
-        Extinction_LMEstats = getLMEstats(data, dep_var, lme_form);
+        Extinction_LMEstats = getLMEstats(data, dep_var, lme_form, true);
     end
 
     % Reinstatement
     data = mT(mT.sessionType=='Reinstatement',:);
-    dep_var = ["HeadEntries", "HE_median_cue_latencies", "ActiveLever", "InactiveLever"];
+    dep_var = ["HeadEntries", "HE_median_cue_latency", "ActiveLever", "InactiveLever"];
     lme_form = " ~ Sex + (1|TagNumber)";
     if ~isempty(data)
-        Reinstatement_LMEstats = getLMEstats(data, dep_var, lme_form);
+        Reinstatement_LMEstats = getLMEstats(data, dep_var, lme_form, true);
     end
     if saveTabs
         if exist("Extinction_LMEstats", "var")
@@ -363,10 +361,10 @@ elseif any(ismember(runType,'BE'))
 
     % BehavioralEconomics
     data = mT(mT.sessionType=='BehavioralEconomics',:);
-    dep_var = ["Intake", "EarnedInfusions", "HE_median_cue_latencies", "Latency", "ActiveLever", "InactiveLever"];
+    dep_var = ["Intake", "EarnedInfusions", "HE_median_cue_latency", "Latency", "ActiveLever", "InactiveLever"];
     lme_form = " ~ Sex + (1|TagNumber)";
     if ~isempty(data)
-        BehavioralEconomics_LMEstats = getLMEstats(data, dep_var, lme_form);
+        BehavioralEconomics_LMEstats = getLMEstats(data, dep_var, lme_form, true);
         if saveTabs
             save([statsname, 'BE'], 'BehavioralEconomics_LMEstats');
         end
