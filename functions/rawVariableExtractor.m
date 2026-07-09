@@ -1,4 +1,4 @@
-function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLatency)
+function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLatency, recountTotals)
 % rawVariableExtractor takes the raw event times for mouse oral SA and
 % calculates variables of interest and adds them to the varTable
 %
@@ -6,6 +6,7 @@ function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLa
 %
 % OUTPUTS: varTable (Updated with variables calculated or cleaned below)
 %
+% SSnote: update output variable list
 % Variables added to or modified from varTable:
 %    HeadEntries: # head entries (filtered to remove headentries <2s apart)
 %    RewardedHeadEntries: # head entries occurring after a lever press 
@@ -18,151 +19,168 @@ function [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLa
 % 
 % events added to eventCode and eventTime:
 %    95 time-filtered head entries
-%    96 rewarded lever presses (includes lever presses not followed by a head entry before the next reward)  
 %    97 rewarded lever presses preceding head entries
-%    98 rewarded head entries following active lever presses
-%    99 rewarded head entries (includes head entries following human-given reward + cue)
-    
-    showWarnings = false;
+%    98 head entries following infusions, used for fentanyl intake estimates
+%    99 head entries following contingent rewards (does not include head entries following non-contingent infusions)
+%    90 noncontingent rewards
+%    91 cues with no head entries within maxLatency seconds 
+
+    HE_timeFilt = 2;
 
     % Change Subject to TagNumber to Match the Key
     varTable.Properties.VariableNames{'Subject'} = 'TagNumber';
-    
-    % KRCnote: UPDATE currently doesn't work with PR data -- array length of eventCode >
-    % eventTime, so I just made a small work around so I can see ~how the
-    % animals are doing during PR
-    ldiff=length(eventCode)-length(eventTime);
-    if ldiff > 0
-        eventCode = eventCode(1:end-ldiff);
-    end
 
-    HE_timeFilt = 2;
-    % filter head entries, remove entries that happen within  HE_timeFilt(s) of each other
-    time_prefiltHE=eventTime(eventCode==6);
+    % Pull times of events
+    time_prefiltHE = eventTime(eventCode == 6); % head entry
+    time_inf = eventTime(eventCode == 17); % infusion on
+    time_cue = eventTime(eventCode == 13); % tone on
+    time_actLP = eventTime(eventCode == 22); % active lever press
+    time_inaLP = eventTime(eventCode == 23); % inactive lever press
+    time_iti_actLP = eventTime(eventCode == 20); % active lever press
+    time_iti_inaLP = eventTime(eventCode == 21); % inactive lever press
+    time_rewLP = eventTime(eventCode == 3 | eventCode == 4); % rewarded lever press
+    
+    % get counts of variables that don't require further processing
+    if recountTotals
+         varTable.ActiveLever = length(time_actLP);
+         varTable.InactiveLever = length(time_inaLP);
+         varTable.TotalInfusions = length(time_inf);
+         varTable.EarnedInfusions = length(time_rewLP);
+    end
+    varTable.itiActiveLever = length(time_iti_actLP);
+    varTable.itiInactiveLever = length(time_iti_inaLP);
+
+    % ---------------- HEAD ENTRY FILTERING ----------------------------
+    % filter head entries, remove entries that happen within  HE_timeFilt(s) of each other    
     remove_inds = logical([0; diff(time_prefiltHE) < HE_timeFilt]);
     time_HE = time_prefiltHE;
     time_HE(remove_inds) = [];
+
     varTable.HeadEntries = length(time_HE); 
+      
+    % filter head entries following lever presses, cues, and infusions
+    time_HE_after_actLP = firstBeforeAfter(time_HE, 'after', time_actLP, true); 
+    time_HE_after_rewLP = firstBeforeAfter(time_HE, 'after', time_rewLP, true); 
+    time_HE_after_cue = firstBeforeAfter(time_HE, 'after', time_cue, true); 
+    time_HE_after_inf = firstBeforeAfter(time_HE, 'after', time_inf, true); % needed for fentanyl intake estimates
     
-    % filter for rewarded head entries (the first occurring after a lever press)
-    time_cue = eventTime(eventCode==13); 
-    nextHE = arrayfun(@(x) time_HE(find(time_HE > x, 1, 'first')), time_cue, 'UniformOutput', false);
-    nextHE = cell2mat(nextHE(~cellfun(@isempty, nextHE))); % Remove empty cells and convert to numeric
-    time_rewHE = unique(nextHE, 'stable'); % Ensure uniqueness
-    varTable.rewardedHeadEntries = length(time_rewHE);
-
-    time_actLP = eventTime(eventCode == 3 | eventCode == 4); % this is ACTIVE LEVER PRESS
-    % SSnote: COME BACK TO THIS, FIND OUT WHY EARNEDINFUSIONS IS LOW FREQUENTLY AND SOMETIMES NEGATIVE
-    varTable.ActiveLever = length(time_actLP);
-    allInf = eventTime(eventCode == 17);
-    varTable.TotalInfusions = length(allInf);
-    time_rewLP = [];
-    for a = 1:length(time_actLP)
-        sub = allInf-time_actLP(a);
-        coinc = find(sub > 0 & sub < 1);
-        if ~isempty(coinc)
-            if length(coinc) > 1
-                disp('blehhhh')
-            end
-            time_rewLP = [time_rewLP; time_actLP(a)];
-        end
-    end
-    varTable.EarnedInfusions = length(time_rewLP);
-
-    % if varTable.TotalInfusions < varTable.EarnedInfusions
-    %     disp(varTable.TagNumber)
-    %     disp(varTable.Date)
-    %     disp(varTable.ActiveLever)
-    %     disp(varTable.TotalInfusions)
-    %     disp(varTable.EarnedInfusions)
-    %     disp(' ')
-    % end
-  
-    % filter out rewarded lever presses not followed by head entries and
-    % rewarded head entries not preceded by active lever presses (freebies)
-    time_rewLP_preceding_HE = arrayfun(@(x) time_actLP(find(time_actLP < x, 1, 'last')), time_rewHE, 'UniformOutput', false);
-    time_rewLP_preceding_HE = cell2mat(time_rewLP_preceding_HE(~cellfun(@isempty, time_rewLP_preceding_HE))); 
-    time_rewLP_preceding_HE = unique(time_rewLP_preceding_HE, 'stable');
+    time_actLP_before_HE = firstBeforeAfter(time_actLP, 'before', time_HE, true); 
+    time_rewLP_before_HE = firstBeforeAfter(time_rewLP, 'before', time_HE, true); 
+    time_cue_before_HE = firstBeforeAfter(time_cue, 'before', time_HE, true);
+    time_inf_before_HE = firstBeforeAfter(time_inf, 'before', time_HE, true);
     
-    time_HE_following_rewLP = arrayfun(@(x) time_rewHE(find(time_rewHE > x, 1, 'first')), time_actLP, 'UniformOutput', false);
-    time_HE_following_rewLP = cell2mat(time_HE_following_rewLP(~cellfun(@isempty, time_HE_following_rewLP)));
-    time_HE_following_rewLP = unique(time_HE_following_rewLP, 'stable');
+    varTable.rewardedHeadEntries = length(time_HE_after_inf);
     
-    % filter for the lever presses that precede the rewarded head entries and get dose per head entry
-    doseHE = arrayfun(@(x) sum(time_actLP < x), time_HE_following_rewLP); % Compute the number of rewLP timestamps before each rewHE timestamp
+    % Compute the number of infusions before the first head entry following infusions
+    % (used to estimate fentanyl intake timing: doses per head entry)
+    doseHE = arrayfun(@(x) sum(time_inf < x), time_HE_after_inf); 
     if ~isempty(doseHE)
         doseHE = [doseHE(1); diff(doseHE)]; % Compute the difference between successive elements to get the count per interval
     end
     varTable.doseHE = {doseHE};
 
-    % calculate all and mean latency
-    varTable.allLatency = {time_HE_following_rewLP - time_rewLP_preceding_HE};
-    trimLatency=varTable.allLatency{1};
-    trimLatency = trimLatency(trimLatency <= maxLatency); % Setting Max Latency 
-    if isempty(trimLatency)
-        varTable.Latency = NaN;
-    else
-        varTable.Latency = mean(trimLatency); 
+
+    % --------- LATENCIES-------------------------------
+
+    % calculate head entry latencies for...
+    % ...active lever presses
+    [varTable.HE_latencies_actLP{1}, varTable.HE_median_actLP_latency] = latencyCalcs(time_actLP_before_HE, time_HE_after_actLP, maxLatency);
+    % ...rewarded lever presses,
+    [varTable.HE_latencies_rewLP{1}, varTable.HE_median_rewLP_latency] = latencyCalcs(time_rewLP_before_HE, time_HE_after_rewLP, maxLatency);
+    % ...cues
+    [varTable.HE_latencies_cue{1}, varTable.HE_median_cue_latency] = latencyCalcs(time_cue_before_HE, time_HE_after_cue, maxLatency);
+
+
+    % ------------------ NONCONTINGENT & UNPURSUED REWARDS ----------------------
+    % event code for noncontingent k-pulse rewards was added pretty late,
+    % and isn't triggered by the task-initiation rewards
+    time_nonCont_rew = [];
+    inf_w_rewLP = arrayfun(@(x) find(abs(time_rewLP - x) < .1), time_inf, 'UniformOutput', false);
+    ind_nonCont_rew = find(cellfun(@(x) isempty(x), inf_w_rewLP));
+    if ~isempty(ind_nonCont_rew)
+        time_nonCont_rew = [time_nonCont_rew; time_inf(ind_nonCont_rew)];
     end
-    varTable.allLatency{1} = trimLatency;
+
+    varTable.NoncontingentRewards = length(time_nonCont_rew);
     
-    % get number of active and inactive lever presses that occur during ITI
-    % SSnote: these are encoded as 20 and 21, don't need to calc them 
-    varTable.itiActiveLever = varTable.ActiveLever - varTable.EarnedInfusions;
-    inLP=eventTime(eventCode==23);% 23  = Inactive Lev press
-    % % SS hack for absent inactive lever event codes in some sessions...
-    % if isempty(inLP)
-    %     inLP = eventTime(eventCode==1); % HARDCODED TO READ RIGHT LEVER AS INACTIVE LEVER
-    %     if showWarnings
-    %         if ~isempty(inLP)
-    %             disp(['logged right lever presses as inactive lever presses for ID:', char(varTable.TagNumber), ' on ', char(varTable.Date)])
-    %         else
-    %             disp(['no inactive lever presses found for ID:', char(varTable.TagNumber), ' on ', char(varTable.Date)])
-    %         end
-    %     end
-    % end
-    inITI=[]; % Initialize in case there are no inLPs during ITI   
-    for j = 1:height(time_actLP)
-        inITI(j,1)=sum(inLP>time_actLP(j) & inLP<(time_actLP(j)+10)); % Which inactive LPs occur in the 10s following a reward (the ITI)
+    time_unpurs_cue = [];
+    ind_unpurs_cue = find((time_HE_after_cue - time_cue_before_HE) > maxLatency);
+    if ~isempty(ind_unpurs_cue)
+        time_unpurs_cue = time_cue_before_HE(ind_unpurs_cue);
     end
-    varTable.itiInactiveLever=sum(inITI);
+    varTable.UnpursuedCues = length(time_unpurs_cue);
+
+
+    % ------------------ INTERVALS ----------------------------------
+    varTable.interval_actLP{1} = diff(time_actLP); 
+    varTable.median_interval_actLP = median(varTable.interval_actLP{1}, 'omitmissing');
+    
+    varTable.interval_rewLP{1} = diff(time_rewLP);
+    varTable.median_interval_rewLP = median(varTable.interval_rewLP{1}, 'omitmissing');
+
+    varTable.interval_HE{1} = diff(time_HE);
+    varTable.median_interval_HE = median(varTable.interval_HE{1}, 'omitmissing');    
+    
+    if ~isempty(time_actLP)
+        varTable.time_first_actLP = time_actLP(1);
+    else
+        varTable.time_first_actLP = nan;
+    end
+    
+
+    % ------------------ POST-HOC EVENT CODES ----------------------------
     
     % append eventCode and eventTime for new variables 
     eventCode=[eventCode; ...
+               repmat(90, [height(time_nonCont_rew), 1]); ...
+               repmat(91, [height(time_unpurs_cue), 1]); ...
                repmat(95, [height(time_HE), 1]); ...
-               repmat(96,[height(time_actLP),1]); ... 
-               repmat(97,[height(time_rewLP_preceding_HE),1]); ...
-               repmat(98,[height(time_rewHE),1]); ...
-               repmat(99,[height(time_HE_following_rewLP),1])];
+               repmat(96, [height(time_inf_before_HE)]); ...
+               repmat(97,[height(time_rewLP_before_HE),1]); ...
+               repmat(98,[height(time_HE_after_inf),1]); ...
+               repmat(99,[height(time_HE_after_rewLP),1])];
+               
     
     eventTime = [eventTime; ...
-                 time_HE; ...
-                 time_actLP; ... % lever presses preceding earned infusion % SSnote: why did I add this? 
-                 time_rewLP_preceding_HE; ...
-                 time_rewHE; ... % head entries following cue light
-                 time_HE_following_rewLP];
-
-
-    % if length(find(eventCode==4)) ~= varTable.EarnedInfusions 
-    %     disp(varTable.EarnedInfusions)
-    %     disp(length(find(eventCode==3)))
-    %     disp(length(find(eventCode==4)))
-    %     disp(length(find(eventCode==96)))
-    %     disp(' ')
-    % end
-
-    % if varTable.EarnedInfusions < 0 
-    %     disp(varTable.Date)
-    %     disp(varTable.Session)
-    %     disp(varTable.TagNumber)
-    %     disp(varTable.EarnedInfusions)
-    %     disp(' ')
-    % end
+                 time_nonCont_rew; ... % noncontingent rewards
+                 time_unpurs_cue; ... % cues with no head entry within maxLatency seconds
+                 time_HE; ... % filtered head entries
+                 time_inf_before_HE; ...
+                 time_rewLP_before_HE; ... % SSnote: does this need an event code? 
+                 time_HE_after_inf; ... % head entries after infusions, used for fentanyl intake estimates
+                 time_HE_after_rewLP]; % head entries after contingent rewards SSnote: does this need an event code? 
 
     varTable.eventCode={eventCode};
     varTable.eventTime={eventTime};
 
 
+    % ------------------ HELPER FUNCTIONS -------------------- 
 
-    
+    function [times] = firstBeforeAfter(A, direction, B, uni)
+        if strcmp(direction, 'before')
+            times = arrayfun(@(x) A(find(A < x, 1, 'last')), B, 'UniformOutput', false);
+            times = cell2mat(times(~cellfun(@isempty, times)));     
+        elseif strcmp(direction, 'after')
+            times = arrayfun(@(x) A(find(A > x, 1, 'first')), B, 'UniformOutput', false);
+            times = cell2mat(times(~cellfun(@isempty, times)));
+        else
+            disp('bad "direction" entry to whenBeforeAfter')
+            times = [nan];
+        end
+        if uni 
+            times = unique(times, 'stable');
+        end
+    end
+
+
+    function [lats, med_lat] = latencyCalcs(first, second, maxLatency)
+        lats = second - first;
+        lats = lats(lats <= maxLatency); 
+        if isempty(lats)
+            med_lat = NaN;
+        else
+            med_lat = quantile(lats, 0.5); 
+        end
+
+    end
 end

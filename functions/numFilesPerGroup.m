@@ -1,4 +1,4 @@
-function [numtab] = numFilesPerGroup(mT)
+ function [numtab] = numFilesPerGroup(mT)
     numtab = table(); 
     sessnum = sort(unique(mT.Session));
     numtab.Session = sessnum;

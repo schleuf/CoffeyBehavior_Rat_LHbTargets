@@ -13,9 +13,10 @@ function [mT] = checkSessionDates(mT, mKey, expKey, correctFiles, savename)
     
     %% PULL SPECIFIC RUN & EXPERIMENT TYPE TO CHECK
 
-    mKey = setExperiment_mKey(mKey, exp_types);
-
-    mT = setExperiment_mT(mT, mKey);
+    %% SS why did I add this for updating Experiment? It's already doing that in createMasterTable, and this is just setting everything to SA...
+    % mKey = setExperiment_mKey(mKey, exp_types);
+    % 
+    % mT = setExperiment_mT(mT, mKey);
 
     date = mT.Date;
     sess = mT.Session;
@@ -42,8 +43,8 @@ function [mT] = checkSessionDates(mT, mKey, expKey, correctFiles, savename)
         key_exp = expKey.Experiment(d);
         key_run = expKey.Run(d);
 
-        wrong_session = find(date == key_date & key_run == run & sess ~= key_session & strcmp(mT.Experiment, char(key_exp)));
-        wrong_type = find(date == key_date & key_run == run & type ~= key_type & strcmp(mT.Experiment, char(key_exp)));
+        wrong_session = find(date == key_date & key_run == run & sess ~= key_session); 
+        wrong_type = find(date == key_date & key_run == run & type ~= key_type);
     
         incorrect_session = [incorrect_session; wrong_session];
         incorrect_type = [incorrect_type; wrong_type];
@@ -138,11 +139,9 @@ function [mT] = correctSessions(mT, mKey, incorrect_session, sdKey)
         this_tag = mT.TagNumber(incorrect_session(is));
         this_id = mT.ID(incorrect_session(is));
         mKey_ind = (mKey.TagNumber==this_tag & mKey.ID == this_id);
-        this_exp = mKey.Experiment(mKey_ind);
-        this_exp = this_exp{1};
         this_run = mKey.Run(mKey_ind);
 
-        sdKey_ind = find((datetime(sdKey.Date) == this_date) & (sdKey.Run == this_run) & (categorical(sdKey.Experiment) == this_exp));
+        sdKey_ind = find((datetime(sdKey.Date) == this_date) & (sdKey.Run == this_run));
         corr_sess = sdKey.Session(sdKey_ind);
         char_sess = [num2str(corr_sess), '.000'];
         len_sess = length(char_sess) - 4;
@@ -237,35 +236,35 @@ function [cat1_cat2s] = checkUnique(cat1, var1, cat2, var2)
 end
 
 
-function [mKey] = setExperiment_mKey(mKey, exp_types)
-    
-    Experiment = cell([length(mKey.Run), 1]);
-    dict_keys = keys(exp_types);
-    for exp = 1:length(dict_keys)
-        sessTypes = exp_types(dict_keys(exp));
-        sessTypes = sessTypes{1};
-        inds = ones([length(mKey.Run), 1]);
+% function [mKey] = setExperiment_mKey(mKey, exp_types)
+% 
+%     Experiment = cell([length(mKey.Run), 1]);
+%     dict_keys = keys(exp_types);
+%     for exp = 1:length(dict_keys)
+%         sessTypes = exp_types(dict_keys(exp));
+%         sessTypes = sessTypes{1};
+%         inds = ones([length(mKey.Run), 1]);
+% 
+%         for st = 1:length(sessTypes)
+%             inds = inds .* mKey.(string(sessTypes{st}));
+%         end
+% 
+%         Experiment(find(inds)) = {dict_keys(exp)};
+%     end
+%     mKey = [mKey, table(Experiment)];
+% end
 
-        for st = 1:length(sessTypes)
-            inds = inds .* mKey.(string(sessTypes{st}));
-        end
 
-        Experiment(find(inds)) = {dict_keys(exp)};
-    end
-    mKey = [mKey, table(Experiment)];
-end
-
-
-function [mT] = setExperiment_mT(mT, mKey)
-    Experiment = cell([length(mKey.Run), 1]);
-    for tn = 1:length(mKey.TagNumber)
-        this_exp = mKey.Experiment(tn);
-        this_exp = this_exp{1};
-        tn_inds = (mT.TagNumber == mKey.TagNumber(tn));
-        Experiment(find(tn_inds)) = {char(this_exp)};
-    end
-    if any(ismember(mT.Properties.VariableNames, 'Experiment'))
-        mT = removevars(mT,{'Experiment'});
-    end
-    mT = [mT, table(Experiment)];
-end
+% function [mT] = setExperiment_mT(mT, mKey)
+%     Experiment = cell([length(mKey.Run), 1]);
+%     for tn = 1:length(mKey.TagNumber)
+%         this_exp = mKey.Experiment(tn);
+%         this_exp = this_exp{1};
+%         tn_inds = (mT.TagNumber == mKey.TagNumber(tn));
+%         Experiment(find(tn_inds)) = {char(this_exp)};
+%     end
+%     if any(ismember(mT.Properties.VariableNames, 'Experiment'))
+%         mT = removevars(mT,{'Experiment'});
+%     end
+%     mT = [mT, table(Experiment)];
+% end

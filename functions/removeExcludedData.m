@@ -1,5 +1,13 @@
 function [mT] = removeExcludedData(mT, mKey)
-    % SS added
+    % exclude animals
+    sub_RemAll = find(~mKey.IncludeBehavior);
+    for sub = 1:length(sub_RemAll)
+        tag = mKey.TagNumber(sub_RemAll(sub));
+        inds = mT.TagNumber == tag; 
+        mT(inds, :) = [];
+    end
+
+    % exclude sessions of included animals
     RemoveSession = zeros([length(mT.Chamber),1]);
     sub_RemSess = mKey.RemoveSession;
     for sub = 1:length(sub_RemSess)

@@ -14,7 +14,6 @@
 close all
 clear all
 
-
 % IMPORT PATHS
 %   main_folder: Path to respository folder
 %   beh_datapath: Path to the folder containing all data files to be included in master data table. 
@@ -48,21 +47,19 @@ experimentKey_flnm = '.\Experiment Key.xlsx';
 %                       value giving the number of days to average across, or it will default to 1.  
 %   pAcq:true: plot aquisition histogram to choose threshold
 
-runNum = '7'; 
-runType = 'SA'; 
-createNewMasterTable = false; 
-firstHour = true; 
-excludeData = true; 
-acquisition_thresh = 10; 
-acquisition_testPeriod = {'Training', 'first', 5};
-maxLatency = 360; % maximum time in seconds between an active lever press and head entry to be factored into latency calculations
-interpWeights = false;
-interpWeight_sessions = [1, 6, 11];
+runNum = '1_2_7'; 
+runType = 'ER'; 
+createNewMasterTable = true; 
+firstHour = false; 
+interpWeights = true;
 run_BE_analysis = false;
-run_withinSession_analysis = false;
+run_withinSession_analysis = true;
 run_individualSusceptibility_analysis = false;
 
-
+excludeData = true; % reads from the IncludeBehavior and RemoveSessions columns of the master key
+acquisition_thresh = 10; % minimum average earned rewards per session during acquisition_testPeriod for animal to be determined "Acquirer"
+acquisition_testPeriod = {'Training', 'last', 5};
+maxLatency = 360; % maximum time in seconds between an active lever press and head entry to be factored into latency calculations
 
 % FIGURE SETTINGS
 % Note: if figures are generated they are also saved.
@@ -75,16 +72,18 @@ run_individualSusceptibility_analysis = false;
 %   groupOralFentOutput_figs: If true, generate severity figures
 %   figsave_type: Cell of char variables listing all image data types to save figures as
 
-saveTabs = false;
-pAcq = true;
+saveTabs = true;
+pAcq = true; 
 dailyFigs = true;
+eventRastFigs = false; 
 pubFigs = false;
 indivIntake_figs = false;
-groupIntake_figs = false;
-groupOralFentOutput_figs = false;
-figsave_type = {'.png', '.pdf'};
+groupIntake_figs = true;
+groupOralFentOutput_figs = false; % only used in Behavioral Economics analysis       
+figsave_type = {'.png'};
 
-% color settings chosen for publication figures. SSnote: haven't been implemented across most figure-generating functions yet. 
+% color settings Kevin chose for publication figures. 
+% SSnote: haven't been implemented across most figure-generating functions yet. 
 gramm_Jaws_Sex_colors = {'hue_range',[40 310],'lightness_range',[95 65],'chroma_range',[50 90]};
 gramm_Cont_Sex_colors = {'hue_range',[85 -200],'lightness_range',[85 75],'chroma_range',[75 90]};
 gramm_Condition_Acq_colors = {'hue_range',[25 385],'lightness_range',[95 60],'chroma_range',[50 70]};
@@ -96,12 +95,13 @@ col_F_Cont = [198/255, 151/255, 0];
 % SAVE PATHS
 % - Each dataset run (determined by runNum and runType) will have its own
 %   folder created in the allfig_savefolder. 
-% - All other paths will be subfolders of allfig_savefolder designated to 
+% - All other paths will be subfolders of allfig_savefolder designated for 
 %   the various figure types and matlab data saved. 
-% - Currently only daily & publication figures are saved with current date in
-%   the file name, so be aware of overwrite risk for other figures.
+% - Be aware of overwrite risk for figures.
 allfig_savefolder = 'Outputs\';
 dailyfigs_savepath = 'Daily Figures\';
+eventRaster_savepath = 'Event Raster Figures\';
+intervalfigs_savepath = 'Interval Figures\';
 pubfigs_savepath = 'Publication Figures\';
 indivIntakefigs_savepath = 'Individual Intake Figures\';
 groupIntakefigs_savepath ='Group Intake Figures\'; 
@@ -110,9 +110,6 @@ tabs_savepath = 'Behavior Tables\';
 
 
 %% ------------- HOUSEKEEPING --------------
-
-dt = char(datetime('today')); % Used for Daily & Publication figure savefile names % don't think this is needed anymore?
-
 runNum = categorical(string(runNum));
 runType = categorical(string(runType));
 if runType == 'all'
@@ -124,8 +121,8 @@ opts = detectImportOptions(masterSheet_flnm);
 opts = setvartype(opts, {'TagNumber','ID','Cage','Sex','TimeOfBehavior'}, 'categorical'); % Columns of the master key to be pulled in
 mKey = readtable(masterSheet_flnm, opts);
 
-% Create subdirectories
-toMake = {tabs_savepath, dailyfigs_savepath, pubfigs_savepath, ...
+% Create output sub-directories
+toMake = {tabs_savepath, dailyfigs_savepath, eventRaster_savepath, intervalfigs_savepath, pubfigs_savepath, ...
           indivIntakefigs_savepath, groupIntakefigs_savepath, groupOralFentOutput_savepath};
 new_dirs = makeSubFolders(allfig_savefolder, runNum, runType, toMake, excludeData, firstHour);
 sub_dir = new_dirs{1};
@@ -133,7 +130,7 @@ if firstHour
     fH_sub_dir = new_dirs{2};
 end
 
-% import experiment key
+% Import experiment key
 expKey = readtable(experimentKey_flnm);
 
 %% ------------- IMPORT DATA --------------
@@ -153,16 +150,6 @@ end
 dex = getExperimentIndex(mT, runNum, runType);
 analyze_subjects = unique(mT.ID(dex.all));
 
-% hackymakelifebetterlater,shouldgoingetExperimentIndex
-exptypes = {'ER', 'BE', 'SA'};
-for e = 1:length(exptypes)
-    if any(contains(fieldnames(dex), exptypes{e}))
-        if isempty(dex.(exptypes{e}))
-            runType(runType == exptypes{e}) = [];
-        end
-    end
-end
-
 % Determine Acquire vs Non-acquire
 Acquire = getAcquire(mT, acquisition_thresh, acquisition_testPeriod, pAcq, analyze_subjects);
 if ~any(ismember(mT.Properties.VariableNames, 'Acquire'))
@@ -175,7 +162,7 @@ mT.LHbAAV(mT.LHbAAV == 'N/A') = categorical("Control");
 
 % Weight Interpolation
 if interpWeights
-    mT = interpoweight(mT, interpWeight_sessions);
+    mT = interpoweight(mT, expKey);
 end
 
 % Get data from the first hour of the session 
@@ -188,10 +175,10 @@ groupStats = struct;
 if firstHour; hour_groupStats = struct; end
 for et = 1:length(runType)
     groupStats.(char(runType(et))) = grpstats(mT(dex.(char(runType(et))),:), ["Sex", "LHbTarget", "LHbAAV", "Session"], ["mean", "sem"], ...
-                          "DataVars",["ActiveLever", "InactiveLever", "EarnedInfusions", "HeadEntries", "Latency", "Intake"]);
+                          "DataVars",["ActiveLever", "HE_median_cue_latencies", "EarnedInfusions", "HeadEntries", "Latency", "Intake"]);
     if firstHour
         hour_groupStats.(char(runType(et))) = grpstats(hmT(dex.(char(runType(et))),:),["Sex", "LHbTarget", "LHbAAV", "Session"], ["mean", "sem"], ...
-                                   "DataVars",["ActiveLever", "InactiveLever", "EarnedInfusions", "HeadEntries", "Latency", "Intake"]);
+                                   "DataVars",["ActiveLever", "InactiveLever", "EarnedInfusions", "HeadEntries", "HE_median_cue_latencies", "Intake"]);
     end
     if saveTabs
         writeTabs(mT(dex.(char(runType(et))),:), [sub_dir, tabs_savepath, 'run_', char(runNum), '_exp_', char(runType(et)), '_inputData'], {'.mat', '.xlsx'})
@@ -207,13 +194,91 @@ end
 
 if dailyFigs
     %Generate a set of figures to spotcheck data daily
-    dailySAFigures(mT, runType, dex, [sub_dir, dailyfigs_savepath], figsave_type);
-    % close all
+    dailySAFigures(mT, runType, dex, 'sem', [sub_dir, dailyfigs_savepath], figsave_type);
+    dailySAFigures(mT, runType, dex, 'quartile', [sub_dir, dailyfigs_savepath], figsave_type);
+    close all
     if firstHour
-        dailySAFigures(hmT, runType, dex, [fH_sub_dir, dailyfigs_savepath], figsave_type)
-        % close all
+        dailySAFigures(hmT, runType, dex, 'sem', [fH_sub_dir, dailyfigs_savepath], figsave_type)
+        dailySAFigures(hmT, runType, dex, 'quartile', [fH_sub_dir, dailyfigs_savepath], figsave_type)
+        close all
     end
 end
+
+
+%% ------------- SESSION RASTERS ----------------
+% SSnote: dumb that I'm sending all these vars to exract the desired subset
+% from every file. 
+if eventRastFigs
+    eventRasterFigures(mT, runType, dex, [sub_dir, eventRaster_savepath],  figsave_type)
+end
+
+
+%% ------------ INTER-PRESS INTERVALS (IPI) ----------
+
+% intervalFigs = false;
+% if intervalFigs
+%     intervalFigures(mT, runType, dex, [sub_dir, intervalfigs_savepath],  figsave_type)
+% end
+
+%% Burst-press filtering
+
+% %% filtering for bursts of presses 
+% ids = unique(mT.TagNumber);
+% 
+% get_code = 22;
+% 
+% minpress = 5;
+% maxinterval = 1;
+% seqs = {};
+% maxseq = 0;
+% 
+% for i = 1:length(ids)
+%     get_ID = ids(i);
+% 
+%     EC = mT.eventCode(mT.TagNumber == get_ID);
+%     ET = mT.eventTime(mT.TagNumber == get_ID);
+%     sess = mT.Session(mT.TagNumber == get_ID);
+%     dat = mT.Date(mT.TagNumber == get_ID);
+%     seqs{i} = {};
+% 
+%     for s = 1:length(EC)
+%         code_inds = find(EC{s}==get_code);
+%         code_times = ET{s}(code_inds);
+%         diff_times = diff(code_times);
+% 
+%         filt = (diff_times <= maxinterval);
+%         seqs{i}{s} = [];
+%         prev = 0;
+% 
+%         for d = 1:length(filt)
+%             if filt(d)
+%                 if prev == 0
+%                     seqstart = code_times(d);
+%                 end
+%                 prev = prev + 1;
+%             else
+%                 if prev >= minpress
+%                     seqend = code_times(d) - 1;
+%                     seqs{i}{s} = [seqs{i}{s}; [seqstart, seqend, prev]];
+%                     disp(['ID: ', char(ids(i))]);
+%                     disp(['start: ', num2str(seqstart)]);
+%                     disp(['end: ', num2str(seqend)]);
+%                     disp(['numpress: ', num2str(prev)]);
+%                     disp(['session: ', num2str(sess(s))]);
+%                     disp(['date: ', char(dat(s))]);
+%                     disp(' ');
+%                     disp(' ');
+%                     if prev > maxseq
+%                         maxseq = prev;
+%                     end
+%                 end
+%                 prev = 0;
+%             end
+%         end
+%     end
+% end
+
+
 
 %% ------------- PUBLICATION-QUALITY FIGURES --------------
 
@@ -223,63 +288,6 @@ if pubFigs %  && strcmp(runType, 'ER')
         pubSAFigures(hmT, runType, dex, [fH_sub_dir, pubfigs_savepath], figsave_type); 
     end
     close all;
-end
-
-%%
-%%
-yids = unique(mT.TagNumber);
-
-get_code = 22;
-
-minpress = 5;
-maxinterval = 1;
-seqs = {};
-maxseq = 0;
-
-for i = 1:length(ids)
-    get_ID = ids(i);
-
-    EC = mT.eventCode(mT.TagNumber == get_ID);
-    ET = mT.eventTime(mT.TagNumber == get_ID);
-    sess = mT.Session(mT.TagNumber == get_ID);
-    dat = mT.Date(mT.TagNumber == get_ID);
-    seqs{i} = {};
-
-    for s = 1:length(EC)
-        code_inds = find(EC{s}==get_code);
-        code_times = ET{s}(code_inds);
-        diff_times = diff(code_times);
-    
-        filt = (diff_times <= maxinterval);
-        seqs{i}{s} = [];
-        prev = 0;
-        
-        for d = 1:length(filt)
-            if filt(d)
-                if prev == 0
-                    seqstart = code_times(d);
-                end
-                prev = prev + 1;
-            else
-                if prev >= minpress
-                    seqend = code_times(d) - 1;
-                    seqs{i}{s} = [seqs{i}{s}; [seqstart, seqend, prev]];
-                    disp(['ID: ', char(ids(i))]);
-                    disp(['start: ', num2str(seqstart)]);
-                    disp(['end: ', num2str(seqend)]);
-                    disp(['numpress: ', num2str(prev)]);
-                    disp(['session: ', num2str(sess(s))]);
-                    disp(['date: ', char(dat(s))]);
-                    disp(' ');
-                    disp(' ');
-                    if prev > maxseq
-                        maxseq = prev;
-                    end
-                end
-                prev = 0;
-            end
-        end
-    end
 end
 
 
@@ -303,7 +311,7 @@ end
 %% ------------- WITHIN-SESSION ANALYSIS --------------
 
 if run_withinSession_analysis
-    fig_colors = {[.5,.5,.5], col_F_c57, col_M_c57, col_F_CD1, col_M_CD1};
+    fig_colors = {[.5,.5,.5], col_F_Jaws, col_M_Jaws, col_F_Cont, col_M_Cont};
     [mTDL, mPressT, mDrugsLT] = WithinSession_Processes(mT, dex, sub_dir, indivIntake_figs, indivIntakefigs_savepath, groupIntake_figs, groupIntakefigs_savepath, saveTabs, tabs_savepath, figsave_type, fig_colors);
 end
 
@@ -313,7 +321,7 @@ statsname=[sub_dir, tabs_savepath, 'Oral SA Group Stats '];
 saveList = {};
 % Training
 data = mT(mT.sessionType == 'Training',:);
-dep_var = ["Intake", "EarnedInfusions", "HeadEntries", "Latency", "ActiveLever", "InactiveLever"];
+dep_var = ["Intake", "EarnedInfusions", "HeadEntries", "HE_median_cue_latencies", "ActiveLever", "InactiveLever", "interval_actLP", "UnpursuedCues"];
 lme_form = " ~ Sex*Session + (1|TagNumber)";
 xlabel('Responses/mg/mL'); % ??? why did kevin put this here
 ylabel('Fentanyl Intake (μg/kg)'); % ??? why did kevin put this here
@@ -329,7 +337,7 @@ if any(ismember(runType,'ER'))
 
     % Extinction
     data = mT(mT.sessionType=='Extinction',:);
-    dep_var = ["HeadEntries", "Latency", "ActiveLever", "InactiveLever"];
+    dep_var = ["HeadEntries", "HE_median_actLP_latencies", "ActiveLever", "InactiveLever"];
     lme_form = " ~ Sex*Session + (1|TagNumber)";
     if ~isempty(data)
         Extinction_LMEstats = getLMEstats(data, dep_var, lme_form);
@@ -337,7 +345,7 @@ if any(ismember(runType,'ER'))
 
     % Reinstatement
     data = mT(mT.sessionType=='Reinstatement',:);
-    dep_var = ["HeadEntries", "Latency", "ActiveLever", "InactiveLever"];
+    dep_var = ["HeadEntries", "HE_median_cue_latencies", "ActiveLever", "InactiveLever"];
     lme_form = " ~ Sex + (1|TagNumber)";
     if ~isempty(data)
         Reinstatement_LMEstats = getLMEstats(data, dep_var, lme_form);
@@ -355,7 +363,7 @@ elseif any(ismember(runType,'BE'))
 
     % BehavioralEconomics
     data = mT(mT.sessionType=='BehavioralEconomics',:);
-    dep_var = ["Intake", "EarnedInfusions", "HeadEntries", "Latency", "ActiveLever", "InactiveLever"];
+    dep_var = ["Intake", "EarnedInfusions", "HE_median_cue_latencies", "Latency", "ActiveLever", "InactiveLever"];
     lme_form = " ~ Sex + (1|TagNumber)";
     if ~isempty(data)
         BehavioralEconomics_LMEstats = getLMEstats(data, dep_var, lme_form);

@@ -43,4 +43,4 @@ Thumbs.db
 *.jpeg
 *.png
 *.fig
-/Output/
+Outputs\

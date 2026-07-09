@@ -72,10 +72,6 @@ Subject = categorical(raw.Var3(find(raw.Var1=="Subject",1,'first')));
 Weight = str2num(raw.Var8{find(raw.Var1=="A")+3}); % Animal Weight 
 Session = str2num(raw.Var4{find(raw.Var1=="A")+4}); % Session 
 
-% if Date == datetime('10/9/2025') && contains(string(Subject), '53')
-%     disp('beeeep')
-% end
-
 TotalInfusions = str2num(raw.Var4{find(raw.Var1=="C")+1});
 EarnedInfusions = TotalInfusions-str2num(raw.Var6{find(raw.Var1=="C")+3});
 HeadEntries = str2num(raw.Var8{find(raw.Var1=="C")+1});
@@ -93,4 +89,5 @@ e=str2double(reshape(raw{eIDX+1:tIDX-1,4:8}',[],1));
 t=str2double(reshape(raw{tIDX+1:end,4:8}',[],1));
 eventCode=e(~isnan(e));
 eventTime=t(~isnan(t));
+
 end

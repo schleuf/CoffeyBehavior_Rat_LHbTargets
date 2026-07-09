@@ -22,4 +22,13 @@ function [dex] = getExperimentIndex(mT, runNum, runType)
         
     end
 
+    exptypes = {'ER', 'BE', 'SA'};
+    for e = 1:length(exptypes)
+        if any(contains(fieldnames(dex), exptypes{e}))
+            if isempty(dex.(exptypes{e}))
+                runType(runType == exptypes{e}) = [];
+            end
+        end
+    end
+
 end
