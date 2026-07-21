@@ -6,6 +6,6 @@ function [varTable] = importMEDPCfile(filepath)
         [varTable, eventCode, eventTime] = importRatOralSA(filepath);
         
         % Calculate Variables Using Raw Data
-        [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLatency);
+        [varTable] = rawVariableExtractor(varTable, eventCode, eventTime, maxLatency, true);
     end
 end

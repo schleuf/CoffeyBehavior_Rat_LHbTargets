@@ -12,6 +12,8 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
     %% Import & process MedPC data
     mT=table; % Initialize Master Table
     
+    id_sessions = containers.Map; 
+
     for bd = 1:length(beh_datapath) % SS edit to pull data from multiple folders
         Files = dir(beh_datapath{bd});
         Files = Files(1:height(Files));
@@ -37,6 +39,30 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
                     recountTotals = false;
                 else
                     recountTotals = true; 
+                end
+
+                % Flags to remove events that were erroneously encoded from previous runs
+                % Run 1 extinction & reinstatement sessions still encoded "rewarded" lever presses
+                 if (varTable.Date >= datetime('14-Apr-2025') && varTable.Date <= datetime('24-Apr-2025')) || ...
+                    (varTable.Date >= datetime('22-Sep-2025') && varTable.Date <= datetime('02-Oct-2025'))
+                    % remove infusion and rewarded left lever eventcodes that did not actually occur during these extintion and reinstatement sessions
+                    inf_inds = (eventCode == 17);
+                    rewpress_inds = (eventCode == 4);
+                    eventCode(inf_inds | rewpress_inds) = [];
+                    eventTime(inf_inds | rewpress_inds) = [];
+                end
+               
+                % Check for multiple session files 
+                subj = char(varTable.Subject);
+                if isempty(id_sessions.keys()) || ~any(ismember(id_sessions.keys(), subj))
+                    id_sessions(subj) = {[varTable.Session]};
+                else
+                    temp = id_sessions(subj);
+                    temp = temp{1};
+                    if ismember(temp, varTable.Session)
+                        disp(['WARNING: MULTIPLE SESSION ', char(varTable.Session) ' FILES FOR SUBJECT ' subj])
+                    end
+                    id_sessions(subj) = {[temp, varTable.Session]};
                 end
 
                 % Calculate Variables Using Raw Data
@@ -153,6 +179,25 @@ function [mT] = createMasterTable(beh_datapath, masterKey_flnm, experimentKey_fl
     % Join Master Variable Table with Key to Include Grouping Variables
     
     mT=innerjoin(mT,mKey,'Keys',{'ID'},'RightVariables',{'Sex','TimeOfBehavior','Chamber', 'LHbTarget', 'LHbAAV'});
+    
+    % keys = id_sessions.keys();
+    % extras = {};
+    % for k = 1:length(keys)
+    %     disp(keys{k})
+    %     temp = id_sessions(keys{k});
+    %     temp = temp{1};
+    %     disp(temp)
+    % 
+    %     if any(ismember(diff(temp), 0))
+    %         if ~all(isempty(extras))
+    %             extras = {extras{:}, keys{k}};
+    %         else
+    %             extras = {keys{k}};
+    %         end
+    %     end
+    % end
+    % disp(extras)
+
     
     %%
     save(savename,'mT');

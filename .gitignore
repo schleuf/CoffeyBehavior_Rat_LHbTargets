@@ -44,3 +44,5 @@ Thumbs.db
 *.png
 *.fig
 Outputs\
+functions\@gramm\
+functions\BrewerMap\

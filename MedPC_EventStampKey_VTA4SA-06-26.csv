@@ -1,33 +1,40 @@
-1,Right Lev press,,
-2,Left Lev press,,
-3,Rewarded rt Lev press,,
-4,Rewarded lt Lev press,,
-5,Reinforcement delivery,,
-6,Head entry,,
-7,Right Lev light on,,
-8,Left Lev light on,,
-9,Right Lev light off,,
-10,Left Lev ight off,,
-11,Houselight on,,
-12,Houselight off,,
-13,Tone on,,
-14,Tone off,,
-15,Magazine tray light on,,
-16,Magazine tray light off,,
-17,Infusion turns on,,
-18,Infusion turns off,,
-19,Timeout ends and/or drug available at START,,
-20,Rt Lev press during timeout,,
-21,Lt Lev press during timeout,,
-22,Active Lev press,,
-23,Inactive Lev press,,
-24,Timeout starts,,
-25,"Time-limit to respond reached, non-contingent reward delivery",,
-26,Right lever extends,,
-27,Left lever extends,,
-28,Right lever retracts,,
-29,Left lever retracts,,
-30,Experimenter reward ,,
-31,Opto Pulse On,,
-32,Opto Pulse Off,,
-100,Session termination,,
+1,Right Lev press
+2,Left Lev press
+3,Rewarded rt Lev press
+4,Rewarded lt Lev press
+5,Reinforcement delivery
+6,Head entry
+7,Right Lev light on
+8,Left Lev light on
+9,Right Lev light off
+10,Left Lev ight off
+11,Houselight on
+12,Houselight off
+13,Tone on
+14,Tone off
+15,Magazine tray light on
+16,Magazine tray light off
+17,Infusion turns on
+18,Infusion turns off
+19,Timeout ends and/or drug available at START
+20,Rt Lev press during timeout
+21,Lt Lev press during timeout
+22,Active Lev press
+23,Inactive Lev press
+24,Timeout starts
+25,"Time-limit to respond reached, non-contingent reward delivery"
+26,Right lever extends
+27,Left lever extends
+28,Right lever retracts
+29,Left lever retracts
+30,Experimenter reward 
+31,Opto Pulse On
+32,Opto Pulse Off
+90,Non-contingent reward
+91,Unpursued Cue
+95,Filtered Head Entries
+96,Infusions preceding head entries
+97,Rewarded lever presses preceding head entries
+98,Head entries following infusions
+99,Head entries following rewarded presses
+100,Session termination

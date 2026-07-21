@@ -1,9 +1,11 @@
 function PCA_fig(ivZT, PCA, sub_dir, subfolder, suffix, figsave_type)
     
-    male_c57 = [0, 187/255, 144/255];
-    female_c57 = [1, 107/255, 74/255];
-    male_CD1 = [163/255, 137/255, 1];
-    female_CD1 = [198/255, 151/255, 0];
+    compGroup = {{'LHbAAV'}, {'Jaws', 'Control'}};
+
+    male_Jaws = [0, 187/255, 144/255];
+    female_Jaws = [1, 107/255, 74/255];
+    male_Control = [163/255, 137/255, 1];
+    female_Control = [198/255, 151/255, 0];
 
     groups = fieldnames(PCA);
 
@@ -13,7 +15,6 @@ function PCA_fig(ivZT, PCA, sub_dir, subfolder, suffix, figsave_type)
         prednames = PCA.(groups{p}).prednames;
         ivZT_inds = PCA.(groups{p}).ivZT_inds;
         this_ivZT = ivZT(ivZT_inds,:);
-
 
         % 3D figure
         f1=figure('color', 'w', 'position', [100 100 800 650]);
@@ -47,14 +48,14 @@ function PCA_fig(ivZT, PCA, sub_dir, subfolder, suffix, figsave_type)
 
             h1(i).MarkerEdgeColor=[0 .0 0];
             h1(i).MarkerSize=R(i-data_ind1 + 1);
-            if this_ivZT.Strain(i - data_ind1 + 1) == 'c57' && this_ivZT.Sex(i - data_ind1 + 1) == 'Male'
-                h1(i).MarkerFaceColor = male_c57;
-            elseif this_ivZT.Strain(i - data_ind1 + 1) == 'c57' && this_ivZT.Sex(i - data_ind1 + 1) == 'Female'
-                h1(i).MarkerFaceColor = female_c57;
-            elseif this_ivZT.Strain(i - data_ind1 + 1) == 'CD1' && this_ivZT.Sex(i - data_ind1 + 1) == 'Male'
-                 h1(i).MarkerFaceColor = male_CD1;
-            elseif this_ivZT.Strain(i - data_ind1 + 1) == 'CD1' && this_ivZT.Sex(i - data_ind1 + 1) == 'Female'
-                 h1(i).MarkerFaceColor = female_CD1;
+            if this_ivZT.LHbAAV(i - data_ind1 + 1) == 'Jaws' && this_ivZT.Sex(i - data_ind1 + 1) == 'Male'
+                h1(i).MarkerFaceColor = male_Jaws;
+            elseif this_ivZT.LHbAAV(i - data_ind1 + 1) == 'Jaws' && this_ivZT.Sex(i - data_ind1 + 1) == 'Female'
+                h1(i).MarkerFaceColor = female_Jaws;
+            elseif this_ivZT.LHbAAV(i - data_ind1 + 1) == 'Control' && this_ivZT.Sex(i - data_ind1 + 1) == 'Male'
+                 h1(i).MarkerFaceColor = male_Control;
+            elseif this_ivZT.LHbAAV(i - data_ind1 + 1) == 'Control' && this_ivZT.Sex(i - data_ind1 + 1) == 'Female'
+                 h1(i).MarkerFaceColor = female_Control;
             end
             
     
@@ -73,11 +74,11 @@ function PCA_fig(ivZT, PCA, sub_dir, subfolder, suffix, figsave_type)
     
         pcTable = [this_ivZT, table(PC1, PC2)];
         f1 = figure('color','w','position',[100 100 800 650]);
-        g = gramm('x', pcTable.PC1, 'y', pcTable.PC2, 'color', pcTable.Sex, 'marker', pcTable.Strain, 'lightness', pcTable.Class);
+        g = gramm('x', pcTable.PC1, 'y', pcTable.PC2, 'color', pcTable.Sex, 'marker', pcTable.LHbAAV, 'lightness', pcTable.Class);
         g.set_order_options('lightness', {'Low', 'Mid', 'High'});
         g.set_color_options('hue_range',[50 542.5],'chroma',80,'lightness',60,'n_color',2);
         g.geom_point();
-        g.set_names('x','PC1','y','PC2','color','Sex', 'marker', 'Strain', 'lightness', 'Class');
+        g.set_names('x','PC1','y','PC2','color','Sex', 'marker', 'LHbAAV', 'lightness', 'Class');
         g.axe_property('FontSize',12,'LineWidth',1.5,'TickDir','out');
         g.set_order_options('lightness',{'High','Mid','Low'});
         g.set_point_options('base_size',8);

@@ -173,7 +173,7 @@ function [mTDL, mPressT, mDrugLT] = WithinSession_Processes(mT, dex, sub_dir, in
             figpath = [sub_dir, groupIntakefigs_savepath, 'Drug Level Grouped by Sex - Session 5 10 15_', char(this_group)];
             subset = (mDrugLT.Session==5 | mDrugLT.Session==10 | mDrugLT.Session==15) & mDrugLT.(group_str) == this_group;
             grammOptions = {'color', mDrugLT.Sex, 'subset', subset};
-            statOptions = {'geom', 'area', 'setylim', 1};
+            statOptions = {'geom', 'area', 'setylim', 1, 'type', 'quartile',};
             wrapOptions = {mDrugLT.Session,'scale','independent','ncols',3,'column_labels',1}; %'force_ticks',1,
             gramm_GroupFig(mDrugLT, "DLTime", "DL", "Time (m)", "Estimated Brain Fentanyl (ug/kg)", figpath, figsave_type, ...
                            'GrammOptions', grammOptions, 'StatOptions', statOptions, 'WrapOptions', wrapOptions, 'AxOptions', axOptions, 'LegOptions', legOptions,'ColorOptions',colorOptions{t})

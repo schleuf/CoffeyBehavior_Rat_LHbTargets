@@ -11,16 +11,16 @@ function [f] = plotViolins(ivT, yVars, yLabs, group, colorlabel)
     
         for y = 1:length(yVars)
             g(1,y)=gramm('x',x,'y',ivT.(yVars{y}),'color',ivT.(group));
-            if strcmp('Strain',colorlabel)
+            if strcmp('LHbAAV',colorlabel)
             g(1,y).set_color_options('hue_range',[25 385],'lightness_range',[95 60],'chroma_range',[50 70],'n_color',2);
             g(1,y).set_order_options('color', groupsets)
             elseif strcmp('Sex',colorlabel)
             g(1,y).set_color_options('hue_range',[25 385],'lightness_range',[95 60],'chroma_range',[50 70],'n_color',2);
             g(1,y).set_order_options('color', groupsets)
-            elseif strcmp('c57 Sex',colorlabel)
+            elseif strcmp('Jaws Sex',colorlabel)
             g(1,y).set_color_options('hue_range',[40 310],'lightness_range',[95 65],'chroma_range',[50 90],'n_color',2);
             g(1,y).set_order_options('color',{'Female','Male'})
-            elseif strcmp('CD1 Sex',colorlabel)
+            elseif strcmp('Control Sex',colorlabel)
             g(1,y).set_color_options('hue_range',[85 -200],'lightness_range',[85 75],'chroma_range',[75 90],'n_color',2);
             g(1,y).set_order_options('color',{'Female','Male'})
             end

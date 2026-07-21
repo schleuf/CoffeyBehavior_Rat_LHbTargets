@@ -34,8 +34,11 @@ function [mT] = interpoweight(mT, expKey)
 
             if ~isempty(w1) && ~isempty(w2)
                 numdays = daysact(d1, d2);
-
-                interp = linspace(w1, w2, numdays+1);
+                try
+                    interp = linspace(w1, w2, numdays+1);
+                catch
+                    disp('help')
+                end
                 
                 %get rid of elements corresponding to dates sessions did
                 %not occur (usually weekends)
